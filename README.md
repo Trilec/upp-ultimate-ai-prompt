@@ -1,4 +1,8 @@
 # ultimate-ai-prompt
+
+https://github.com/Trilec/ultimate-ai-prompt
+
+
 U++ ultimate AI Prompt
 
 A comprehensive session guide for developing C++ applications using the U++ framework, with a focus on U++ version [latest].
