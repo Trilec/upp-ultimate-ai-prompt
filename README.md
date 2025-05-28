@@ -1,6 +1,6 @@
-# ultimate-ai-prompt
+# upp-ultimate-ai-prompt
 
-https://github.com/Trilec/ultimate-ai-prompt
+https://github.com/Trilec/upp-ultimate-ai-prompt
 
 
 U++ ultimate AI Prompt
