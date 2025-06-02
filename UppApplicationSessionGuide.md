@@ -1,43 +1,35 @@
 ### U++ Application Development Session Guide
 
-We will be developing a C++ application using the U++ development framework and tailored for U++ version 17045 . The following is the mandate and coding details along with examples to help ensure that any code aligns with the framework's capabilities and standards.
+We will be developing a C++ application using the U++ development framework.
+The following is the mandate and coding details along with examples to help ensure that any code aligns with the framework's capabilities and standards.
 
-#### Conformity Mandate for this U++ Development session
+#### Conformity Mandate
 
-- **Ensure U++ Compatibility**: Always check compatibility with U++ version 17045.
-- **Maintain Formatting**: Use clear, concise formatting suitable for cutting and pasting.
-- **Adhere to CamelCase Naming**: Keep naming consistent and use camelCase.
-- **Concise Code and Comments**: Reduce adjectives and ensure clarity in code and comments.
-- **Consistent Function Signatures**: Use consistent names and minimize changes to existing code.
-- **Clean and Sorted Code**: Keep code organized, sorted, and easy to read.
-- **Inline Short Functions**: Inline functions with less than 4 lines.
+- **Ensure U++ Compatibility**: Build & test with 2025.1 (17799) or newer nightlies (e.g. 17913).
+- **Maintain Formatting**: Copy-friendly, minimal prose.
+- **CamelCase Identifiers**: Consistent across files.
+- **Concise Code & Comments**: Prefer imperative phrases, avoid superfluous adjectives.
+- **Stable Signatures**: Change public APIs only by addition, never by substitution.
+- **Clean, Sorted Code**: Group includes ? types ? funcs; alphabetical where practical.
+- **Inline = 4-line functions**.
+- **Animation-ready**: Prefer `Animate(...)`, `AnimateProperty(...)`.
+- **Dark-mode Aware**: Derive colours via `AColor/SColor` and `DarkTheme()`.
+- **64-bit Formatting**: Use `FormatIntBase(int64 ...)`.
+- **Logs**: On POSIX read/write under `~/.local/state/u++/log`.
 
-#### Error Handling in U++
-
-Suggest error handling where possible . Use try-catch blocks for managing exceptions, especially for file operations or user input.
+#### Error Handling
 
 ```cpp
-#include <Core/Core.h> // For Exc
-
-using namespace Upp;
-
-// Make sure this is part of a function or method
-void ExampleErrorHandling() {
-    try {
-        // Operation that might throw an exception
-        // For example, trying to load a non-existent file
-        String content = LoadFile("non_existent_file.txt");
-        if (content.IsVoid()) {
-            throw Exc("File is void or could not be loaded.");
-        }
-        LOG("File loaded successfully.");
-    } catch(const Exc& e) {
-        PromptOK("An error occurred: " + e);
-    }
+try {
+    FileIn fin("data.txt");
+    if(!fin) throw Exc("Cannot open data.txt");
+}
+catch(const Exc& e) {
+    LOG(e); PromptOK(e);
 }
 ```
 
-Additional information from the development page:
+Additional information:
 
 ### 1. Introduction
 U++ significantly reduces the complexity of desktop application development. The following example demonstrates an application that calculates the number of days between two dates, updating as the user edits the input fields.
@@ -47,7 +39,7 @@ U++ significantly reduces the complexity of desktop application development. The
 ```cpp
 #include <CtrlLib/CtrlLib.h>
 
-#define LAYOUTFILE <Days/Days.lay> // Assumes a layout file named Days.lay
+#define LAYOUTFILE <Days/Days.lay>
 #include <CtrlCore/lay.h>
 
 class Days : public WithDaysLayout<TopWindow> {
@@ -57,7 +49,7 @@ public:
 };
 
 Days::Days() {
-    CtrlLayout(*this, "Days"); // Loads layout from Days.lay
+    CtrlLayout(*this, "Days");
     date1 ^= date2 ^= [=] {
         result = IsNull(date1) || IsNull(date2) ? "" :
                  Format("There is %d day(s) between %` and %`", abs(Date(~date1) - Date(~date2)), ~date1, ~date2);
@@ -77,23 +69,17 @@ U++ avoids standard C++ library containers for GUI development due to the strict
 
 - **Vector**: Requires `Moveable` for types, providing fast performance.
 - **Array**: No type requirements, offering flexibility at a slight performance cost.
-(Other containers like `Index`, `BiVector`, `VectorMap`, `ArrayMap` etc. also exist and are covered later.)
 
 ### 4. Widget Ownership
 Widgets in U++ are always owned by the client code, not the GUI toolkit. This ensures that widgets are independent entities, accessible even when not part of a visible GUI.
 
 **Example:**
-(This struct simply holds widget members; they would be initialized and added to a layout in a real scenario)
+
 ```cpp
-#include <CtrlLib/CtrlLib.h>
-
-using namespace Upp;
-
-struct MyDialogControls {
+struct MyDialog {
     Option option;
     EditField edit;
     Button ok;
-    // Constructor or init method would set these up
 };
 ```
 
@@ -101,264 +87,27 @@ struct MyDialogControls {
 U++ uses C++ templates for layout designs, which are reflected in code as templates that derive from widget classes. This eliminates the need for widget IDs or names.
 
 **Example:**
+
 ```cpp
-#include <CtrlLib/CtrlLib.h>
-
-using namespace Upp;
-
-// The template definition (as provided in the issue)
 template <class T>
 struct WithMyDialogLayout : public T {
     Option option;
     EditField edit;
     Button ok;
-
-    typedef WithMyDialogLayout CLASSNAME;
-
-    WithMyDialogLayout() {
-        // Basic setup, assuming T is a TopWindow or similar Ctrl
-        // In a real scenario, CtrlLayout or manual Add would place these.
-        // This is a conceptual example.
-        if (dynamic_cast<TopWindow*>(this)) {
-             this->Add(option.SetLabel("An Option").LeftPos(10, 100).TopPos(10, 20));
-             this->Add(edit.HSizePos(10, 10).TopPos(40, 20));
-             this->Add(ok.SetLabel("OK").RightPos(10, 50).BottomPos(10, 25));
-        }
-    }
 };
-```
-
-**Illustrative Usage of the Dialog Template:**
-```cpp
-// This example was generated by the assistant.
-#include <CtrlLib/CtrlLib.h>
-
-using namespace Upp;
-
-// Template for the dialog layout (simplified from original prompt for brevity here)
-template <class T>
-struct WithMySimpleDialogLayout : public T {
-    Label title;
-    EditString nameEdit;
-    Button okButton;
-
-    typedef WithMySimpleDialogLayout CLASSNAME;
-
-    WithMySimpleDialogLayout() {
-        this->Add(title.SetLabel("My Dialog Title").HCenterPos(150).TopPos(10));
-        this->Add(nameEdit.TopPos(40).LeftPos(10).RightPos(10));
-        this->Add(okButton.SetLabel("OK").Ok().BottomPos(10).RightPos(10, 80));
-        if (dynamic_cast<TopWindow*>(this)) {
-            this->Title("Dialog From Template"); // Set window title if T is TopWindow
-            this->SetRect(0,0, 300, 120);      // Default size
-        }
-    }
-};
-
-// Actual dialog implementation using the layout template
-struct MyActualDialog : WithMySimpleDialogLayout<TopWindow> {
-    typedef MyActualDialog CLASSNAME;
-
-    MyActualDialog() {
-        // CtrlLayout(*this, "My Dialog Title"); // Would load from .lay if defined
-        // If not using a .lay file, the WithMyDialogLayout constructor already added controls.
-
-        nameEdit.SetData("Default Name");
-        okButton << [=] {
-            String name = nameEdit.GetData();
-            PromptOK(Format("Name: %s", name));
-            Accept();
-        };
-    }
-};
-
-// To run this example (e.g. in GUI_APP_MAIN):
-// MyActualDialog().Run();
-// if(MyActualDialog().RunOk()) { LOG("Dialog accepted."); }
 ```
 
 ### 6. Value and Null
 U++'s `Value` type allows dynamic data storage and retrieval. `Null` represents an empty value and is supported by most U++ types.
 
-```cpp
-#include <Core/Core.h>
-using namespace Upp;
-
-// CONSOLE_APP_MAIN { // Assuming a console context for this snippet
-void ValueExample() {
-    Value v_int = 10;
-    Value v_string = "Hello";
-    Value v_null; // Or Value v_null = Null;
-
-    LOG("v_int: " << v_int << ", IsNull: " << IsNull(v_int));
-    LOG("v_string: " << v_string << ", IsNull: " << IsNull(v_string));
-    LOG("v_null: " << v_null << ", IsNull: " << IsNull(v_null));
-
-    Date d = Null; // Date type can be Null
-    LOG("Date d: " << d << ", IsNull: " << IsNull(d));
-    d = GetSysDate();
-    LOG("Date d: " << d << ", IsNull: " << IsNull(d));
-}
-// }
-```
-
 ### 7. Display and Convert
 `Convert` classes in U++ handle bidirectional `Value` conversions, often between logical and textual representations. `Display` classes define how `Value` objects are presented in the GUI.
-
-**Example for `Convert` and `Display`:**
-This example defines a custom struct `MyColorValue`, a `Convert` class to manage its representation as a `Value`, and a `Display` class to customize how it's shown in the GUI.
-```cpp
-// This example was generated by the assistant.
-#include <Core/Core.h>
-#include <Draw/Draw.h> // For Color
-#include <CtrlCore/CtrlCore.h> // For Display, Value, Controls
-#include <CtrlLib/CtrlLib.h> // For PromptOK, TopWindow, EditString etc.
-
-using namespace Upp;
-
-// Define a simple custom struct
-struct MyColorValue {
-    Color colorVal;
-    String name;
-
-    MyColorValue() : colorVal(Black()) {} // Default constructor
-    MyColorValue(Color c, String n) : colorVal(c), name(n) {}
-
-    String ToString() const { // For DUMP/LOG
-        return Sprintf("%s (%s)", name, colorVal.ToString());
-    }
-    // Comparison operator for Value::IsEqual (optional but good practice)
-    bool operator==(const MyColorValue& other) const {
-        return colorVal == other.colorVal && name == other.name;
-    }
-};
-
-// Create a Convert class for MyColorValue
-class MyColorValueConvert : public Convert {
-public:
-    virtual Value Format(const Value& q) const {
-        if (q.Is<MyColorValue>()) {
-            const MyColorValue& mcv = q.Get<MyColorValue>();
-            // Represent as a user-friendly string
-            return Sprintf("%s color [%s]", mcv.name, mcv.colorVal.ToString());
-        }
-        return q;
-    }
-
-    virtual Value Scan(const Value& q) const {
-        if (q.IsString()) {
-            String s = q.To<String>();
-            // Simplified parser: "Name color [#RRGGBB]"
-            int colorPos = s.Find(" color [");
-            int cbracket = s.Find(']');
-            if (colorPos != -1 && cbracket != -1 && cbracket > colorPos + 8) {
-                String namePart = TrimBoth(s.Left(colorPos));
-                String colorSpec = TrimBoth(s.Mid(colorPos + 8, cbracket - (colorPos + 8)));
-                Color c;
-                if (c.Scan(colorSpec)) { // Color::Scan can parse "#RRGGBB" and color names
-                    return RawToValue(MyColorValue(c, namePart));
-                }
-            }
-        }
-        return ErrorValue(); // Indicate conversion failure
-    }
-};
-
-// Custom Display for MyColorValue
-class MyColorValueDisplay : public Display {
-public:
-    virtual void Paint(Draw& w, const Rect& r, const Value& q,
-                       Color ink, Color paper, dword style) const {
-        if (q.Is<MyColorValue>()) {
-            const MyColorValue& mcv = q.Get<MyColorValue>();
-            Rect colorBox = r;
-            colorBox.right = r.left + r.GetHeight();
-            w.DrawRect(colorBox, mcv.colorVal); // Draw the color box
-            
-            Rect textRect = r;
-            textRect.left = colorBox.right + 4;
-            DrawTLText(w, textRect.TopLeft(), GetStdFont(), mcv.name, ink);
-        } else {
-            StdDisplay().Paint(w, r, q, ink, paper, style); // Fallback
-        }
-    }
-    // Optional: GetStdSize for controls to auto-size based on content
-    virtual Size GetStdSize(const Value& q) const {
-        if (q.Is<MyColorValue>()) {
-            const MyColorValue& mcv = q.Get<MyColorValue>();
-            Size sz = GetTextSize(mcv.name, GetStdFont());
-            return Size(sz.cx + sz.cy + 4, sz.cy); // width for text + color box + padding, height
-        }
-        return StdDisplay().GetStdSize(q);
-    }
-};
-
-// --- Example Usage (within a GUI_APP_MAIN context) ---
-// In a real application, you'd register these:
-// RegisterValueType<MyColorValue>(Value::USER + 100, new MyColorValueConvert, "MyColorValue", new MyColorValueDisplay);
-//
-// Then, a control could use it:
-// EditField editor;
-// editor.SetConvert(Single<MyColorValueConvert>()); // Assign convert instance
-// editor.SetDisplay(Single<MyColorValueDisplay>());   // Assign display instance
-// editor.SetData(RawToValue(MyColorValue(Red(), "Sample Red")));
-//
-// Or if globally registered, U++ might pick it up automatically for Value based controls.
-// For a quick test, one might have a TopWindow with an EditString to test Scan,
-// and a custom Ctrl to test Paint.
-// (Full GUI example MyColorValueExample.cpp was created by worker, this is a summary)
-```
 
 ### 8. Function
 U++ uses `Upp::Function`, similar to `std::function`, for handling output actions with C++ lambdas. Unlike `std::function`, `Upp::Function` does nothing when unassigned, making it safer for GUI events.
 
-```cpp
-#include <Core/Core.h> // For Function
-#include <CtrlLib/CtrlLib.h> // For Button, PromptOK (GUI Example)
-
-using namespace Upp;
-
-// Example 1: Simple Function usage
-void PrintMessage(const String& msg) {
-    LOG(msg);
-}
-
-void FunctionExample() {
-    Function<void(const String&)> myFunc;
-    if (!myFunc) {
-        LOG("myFunc is not assigned.");
-    }
-    myFunc = PrintMessage;
-    if (myFunc) {
-        myFunc("Hello from Function!");
-    }
-
-    myFunc = [](const String& s) { LOG("Lambda says: " + s); };
-    myFunc("Test Lambda");
-
-    myFunc = nullptr; // Or myFunc.Clear();
-    myFunc("This will not crash or print."); // Safe to call if unassigned
-}
-
-// Example 2: GUI event handling
-// class MyButtonApp : public TopWindow {
-// public:
-//     Button btn;
-//     Function<void()> WhenButtonClicked; // Define a Function member
-// 
-//     MyButtonApp() {
-//         Add(btn.SetLabel("Click Me").SizePos());
-//         btn << [=] { if(WhenButtonClicked) WhenButtonClicked(); }; // Call if assigned
-//
-//         // Assign an action
-//         WhenButtonClicked = [=] { PromptOK("Button was clicked!"); };
-//     }
-// };
-// GUI_APP_MAIN { MyButtonApp().Run(); }
-```
-
 ### 9. U++ Widgets
-U++ provides a comprehensive set of widgets, with flexible options for creating custom widgets as needed. (See examples below and "U++ Widgets Overview" section).
+U++ provides a comprehensive set of widgets, with flexible options for creating custom widgets as needed.
 
 ---
 
@@ -367,964 +116,439 @@ U++ provides a comprehensive set of widgets, with flexible options for creating 
 ### 1. Basic Operations
 
 **Logging and Debugging:**
-Use `LOG(message)` for general logging and `DUMP(variable)` to log a variable's name and value. `DUMPC(container)` dumps container contents.
+
 ```cpp
-#include <Core/Core.h>
-using namespace Upp;
-
-// CONSOLE_APP_MAIN {
-void LoggingExample() {
-    StdLogSetup(LOG_COUT|LOG_FILE); // Setup log to console and file
-    int x = 123;
-    String s = "test";
-
-    LOG("Value of x is " << x << ", and s is " << s);
-    DUMP(x);  // Outputs: x = 123
-    DUMP(s);  // Outputs: s = "test"
-    
-    Vector<int> v = {1, 2, 3};
-    DUMPC(v); // Outputs content of vector: [1, 2, 3]
-}
-// }
+LOG("Value of x is " << x);
+DUMP(x);  // x = 123
 ```
 
 **String Operations:**
-U++ `String` class offers rich functionality.
+
 ```cpp
-#include <Core/Core.h>
-using namespace Upp;
-
-// CONSOLE_APP_MAIN {
-void StringOpsExample() {
-    StdLogSetup(LOG_COUT|LOG_FILE);
-    String a = "Hello";
-    a = a + " world"; // Concatenation
-    DUMP(a);
-
-    DUMP(a.Find('e'));      // Find character: 1
-    DUMP(a.GetLength());    // Get length: 11
-    DUMP(a.Mid(6, 5));      // Substring: "world"
-    DUMP(ToUpper(a));       // Convert to uppercase: "HELLO WORLD"
-}
-// }
+String a = "Hello";
+a = a + " world";
+DUMP(a.Find('e'));  // Find occurrences
 ```
-(A more comprehensive Strings Example is provided further down.)
 
 ### 2. Streams and Serialization
 
 **File Streams:**
-For reading and writing files.
+
 ```cpp
-#include <Core/Core.h>
-using namespace Upp;
-
-// CONSOLE_APP_MAIN {
-void FileStreamExample() {
-    StdLogSetup(LOG_COUT|LOG_FILE);
-    String tempFileName = GetTempFileName(); // Get a temporary file path
-
-    // Writing to a file
-    FileOut fout(tempFileName);
-    if(fout) {
-        fout << "Some text for the file.
-";
-        fout << "Another line.
-";
-        fout.Close(); // Important to close to flush data
-        LOG("Successfully wrote to " << tempFileName);
-    } else {
-        LOG_ERROR("Failed to open " << tempFileName << " for writing.");
-        return;
-    }
-
-    // Reading from a file
-    FileIn fin(tempFileName);
-    if(fin) {
-        String line;
-        while(fin.GetLine(line)) {
-            LOG("Read line: " << line);
-        }
-        fin.Close();
-    } else {
-        LOG_ERROR("Failed to open " << tempFileName << " for reading.");
-    }
-    DeleteFile(tempFileName); // Clean up
-}
-// }
+FileOut fout("output.txt");
+fout << "Some text";
+fout.Close();
 ```
 
 **Serialization:**
-U++ provides convenient mechanisms to serialize objects to streams or strings.
-This example defines a simple struct and demonstrates serializing it to a string and back.
+
 ```cpp
-// This example was generated by the assistant.
-#include <Core/Core.h>
-
-using namespace Upp;
-
-// Define a simple struct for serialization
-struct MySerializableObject {
-    String name;
-    int    value;
-
-    // Default constructor needed for LoadFromString
-    MySerializableObject() : value(0) {} 
-
-    MySerializableObject(String n, int v) : name(n), value(v) {}
-
-    // Serialization function (the magic happens here)
-    void Serialize(Stream& s) {
-        s % name % value; // U++ serialization syntax for members
-    }
-
-    // For DUMP/LOG, a ToString method is helpful
-    String ToString() const {
-        return Sprintf("Name: '%s', Value: %d", name, value);
-    }
-};
-
-// CONSOLE_APP_MAIN { // Assuming a console app for this example
-void SerializationExample() {
-    StdLogSetup(LOG_COUT|LOG_FILE);
-
-    // Create an instance of the object
-    MySerializableObject originalObject("TestObject", 123);
-    DUMP(originalObject); // Uses ToString() if available
-
-    // Serialize the object to a String
-    String serializedData = StoreAsString(originalObject);
-    LOG("Serialized data: " << serializedData);
-    // Example output: "$    TestObject   {    " (binary format)
-
-
-    // Deserialize the object from the String
-    MySerializableObject deserializedObject;
-    if (LoadFromString(deserializedObject, serializedData)) {
-        LOG("Deserialized object successfully:");
-        DUMP(deserializedObject);
-
-        // Verify
-        ASSERT(deserializedObject.name == originalObject.name);
-        ASSERT(deserializedObject.value == originalObject.value);
-        LOG("Verification successful.");
-    } else {
-        LOG_ERROR("Failed to deserialize object!");
-    }
-
-    // Example of serializing to a file (optional demonstration)
-    String tempFile = GetTempFileName();
-    if (StoreToFile(originalObject, tempFile)) {
-        LOG("Stored object to temporary file: " << tempFile);
-        MySerializableObject loadedFromFileObject;
-        if (LoadFromFile(loadedFromFileObject, tempFile)) {
-            LOG("Loaded object from file successfully:");
-            DUMP(loadedFromFileObject);
-        } else {
-            LOG_ERROR("Failed to load object from file!");
-        }
-        DeleteFile(tempFile); // Clean up
-    } else {
-        LOG_ERROR("Failed to store object to file!");
-    }
-}
-// }
+struct MyObject { /* ... */ };
+MyObject obj;
+String s = StoreAsString(obj);
 ```
 
 ### 3. Containers and Data Structures
 
 **Vector and Array:**
-`Vector<T>` is a fast, general-purpose dynamic array (T must be `Moveable`). `Array<T>` is more flexible (no requirements on T) but might be slower for complex types.
+
 ```cpp
-#include <Core/Core.h>
-using namespace Upp;
-
-// CONSOLE_APP_MAIN {
-void VectorArrayExample() {
-    StdLogSetup(LOG_COUT|LOG_FILE);
-    Vector<int> v; 
-    v.Add(1);
-    v.Add(2);
-    v.Add(3);
-    DUMP(v[1]); // Access element: 2
-    DUMPC(v);   // Dump content: [1, 2, 3]
-
-    Array<String> a; 
-    a.Add("text1");
-    a.Add("text2");
-    DUMP(a[0]); // Access element: "text1"
-    DUMPC(a);   // Dump content: ["text1", "text2"]
-}
-// }
+Vector<int> v; 
+v.Add(1);
+Array<String> a; 
+a.Add("text");
 ```
-(More container examples in "How to Use U++ Containers Effectively" section.)
 
 **Index for Fast Retrieval:**
-`Index<T>` stores unique items and allows quick lookups.
+
 ```cpp
-#include <Core/Core.h>
-using namespace Upp;
-
-// CONSOLE_APP_MAIN {
-void IndexExample() {
-    StdLogSetup(LOG_COUT|LOG_FILE);
-    Index<String> ndx; 
-    ndx.Add("itemA");
-    ndx.Add("itemB");
-    ndx.Add("itemA"); // Adding duplicate is a no-op
-
-    DUMP(ndx.Find("itemB")); // Find index of "itemB": 1
-    DUMP(ndx.Find("itemC")); // Find non-existent: -1 (Invalid)
-    DUMPC(ndx); // Dump content: ["itemA", "itemB"]
-}
-// }
+Index<String> ndx; 
+ndx.Add("item");
 ```
 
 ### 4. Ranges and Algorithms
 
 **Using Ranges:**
-`SubRange` provides a view into a part of a container.
-```cpp
-#include <Core/Core.h>
-using namespace Upp;
 
-// CONSOLE_APP_MAIN {
-void RangeExample() {
-    StdLogSetup(LOG_COUT|LOG_FILE);
-    Vector<int> data {1, 2, 3, 4, 5};
-    SubRange<const Vector<int>> sub = SubRange(data, 1, 2); // Elements at index 1 and 2 (value 2, 3)
-    
-    LOG("SubRange elements:");
-    for(int val : sub) {
-        LOG(val); // Logs 2, then 3
-    }
-}
-// }
+```cpp
+Vector<int> data{1, 2, 3};
+auto subrange = SubRange(data, 1, 2);  // Range from index 1 to 2
 ```
 
 **Algorithms:**
-U++ provides common algorithms like `Sort`, `Find`.
+
 ```cpp
-#include <Core/Core.h>
-#include <Algo/Algo.h> // For Sort, FindIndex etc.
-using namespace Upp;
-
-// CONSOLE_APP_MAIN {
-void AlgoExample() {
-    StdLogSetup(LOG_COUT|LOG_FILE);
-    Vector<int> data {5, 1, 4, 2, 3};
-    DUMPC(data); // Original
-    
-    Sort(data);
-    DUMPC(data); // Sorted: [1, 2, 3, 4, 5]
-
-    int index = FindIndex(data, 4);
-    DUMP(index); // Index of 4: 3
-    
-    // Sorting custom types
-    struct MySortItem {
-        String key;
-        int val;
-        String ToString() const { return Sprintf("%s:%d", key, val); }
-    };
-    Vector<MySortItem> items;
-    items.Add({"b", 2}); items.Add({"a", 1}); items.Add({"c", 3});
-    Sort(items, [](const MySortItem& a, const MySortItem& b) { return a.key < b.key; });
-    DUMPC(items); // Sorted by key
-}
-// }
+Sort(data);
+int index = FindIndex(data, 2);
 ```
 
 ### 5. Value and Polymorphism
 
 **Handling Different Types:**
-`Value` can hold various data types.
-```cpp
-#include <Core/Core.h>
-using namespace Upp;
 
-// CONSOLE_APP_MAIN {
-void ValuePolymorphismExample() {
-    StdLogSetup(LOG_COUT|LOG_FILE);
-    Value v = 123;
-    LOG("Value is int: " << v.Is<int>() << ", content: " << v.Get<int>());
-    
-    v = "hello";
-    LOG("Value is String: " << v.Is<String>() << ", content: " << v.Get<String>());
-    
-    v = Date(2024, 1, 1);
-    LOG("Value is Date: " << v.Is<Date>() << ", content: " << v.Get<Date>());
-}
-// }
+```cpp
+Value v = 123;
+int x = v;
 ```
 
 **Collections of `Value` Objects:**
-`ValueArray` and `ValueMap` can store collections of heterogeneous types.
+
 ```cpp
-#include <Core/Core.h>
-using namespace Upp;
+ValueArray va; 
+va.Add(1); 
+va.Add("text");
 
-// CONSOLE_APP_MAIN {
-void ValueCollectionsExample() {
-    StdLogSetup(LOG_COUT|LOG_FILE);
-    ValueArray va; 
-    va.Add(1); 
-    va.Add("text");
-    va.Add(true);
-    DUMPC(va); // Dumps content and types
-
-    ValueMap vm; 
-    vm.Add("keyInt", 123);
-    vm.Add("keyString", "another text");
-    vm.Add("keyDate", GetSysDate());
-    DUMP(vm);  // Dumps map content and types
-
-    LOG("Accessing ValueMap item 'keyString': " << vm["keyString"]);
-}
-// }
+ValueMap vm; 
+vm.Add("key", 123);
 ```
 
 ### 6. Multithreading
 
 **Basic Thread Operations:**
-Create and manage threads with `Thread`.
-```cpp
-#include <Core/Core.h>
-using namespace Upp;
 
-// CONSOLE_APP_MAIN {
-void BasicThreadExample() {
-    StdLogSetup(LOG_COUT|LOG_FILE);
-    Thread t;
-    LOG("Main thread: Starting worker thread.");
-    t.Run([] { 
-        LOG("Worker thread: Running.");
-        Sleep(100); // Simulate work
-        LOG("Worker thread: Finished.");
-    }); 
-    LOG("Main thread: Waiting for worker thread to complete.");
-    t.Wait(); // Wait for the thread to finish
-    LOG("Main thread: Worker thread finished.");
-}
-// }
+```cpp
+Thread t; 
+t.Run([]{ /* ... */ }); 
+t.Wait();
 ```
 
-**Parallel Execution of Tasks (`CoWork`):**
-`CoWork` simplifies running multiple tasks in parallel and waiting for their completion.
-```cpp
-#include <Core/Core.h>
-using namespace Upp;
+**Parallel Execution of Tasks:**
 
-// CONSOLE_APP_MAIN {
-void CoWorkExample() {
-    StdLogSetup(LOG_COUT|LOG_FILE);
-    CoWork co; 
-    LOG("Starting parallel tasks...");
-    for(int i = 0; i < 3; ++i) {
-        co & [=] { // The '&' operator adds a new task
-            LOG("Task " << i << ": Starting.");
-            Sleep(50 + i * 20); // Simulate different work durations
-            LOG("Task " << i << ": Finished.");
-        }; 
-    }
-    LOG("All tasks dispatched. Waiting for completion...");
-    co.Finish(); // Waits for all tasks added to 'co' to complete
-    LOG("All parallel tasks finished.");
-}
-// }
+```cpp
+CoWork co; 
+co & []{ /* ... */ }; 
+co.Finish();
 ```
 
 ### 7. Parallel Algorithms
 
-**Distribute Tasks Over Multiple Cores (`CoPartition`):**
-`CoPartition` splits a data range and processes sub-ranges in parallel.
+**Distribute Tasks Over Multiple Cores:**
+
 ```cpp
-// This example was generated by the assistant.
-#include <Core/Core.h>
-
-using namespace Upp;
-
-// CONSOLE_APP_MAIN { // Assuming a console app for this example
-void CoPartitionFullExample() {
-    StdLogSetup(LOG_COUT|LOG_FILE);
-
-    Vector<int> numbers;
-    for(int i = 1; i <= 100; ++i) { // A dataset for demonstration
-        numbers.Add(i);
-    }
-
-    Atomic totalSum = 0; // Atomic for thread-safe accumulation from parallel tasks
-
-    LOG("Calculating sum of numbers from 1 to 100 in parallel using CoPartition...");
-
-    // CoPartition will divide 'numbers' into sub-ranges (partitions)
-    // and process each partition in parallel using available CPU cores.
-    // The lambda function is executed for each sub-range.
-    CoPartition(numbers, [&](const SubRange<const Vector<int>>& subrange) {
-        long localSum = 0; // Use long for local sum to avoid overflow with large subranges
-        for(int x : subrange) {
-            localSum += x;
-        }
-        totalSum += localSum; // Atomically add the sum of this subrange to the global total
-
-        // Optional: Log the processing of a subrange (can be verbose, use for debugging)
-        // String subrangeStr;
-        // for(int x : subrange) subrangeStr << (subrangeStr.IsEmpty() ? "" : ", ") << x;
-        // LOG("Processed subrange [" << subrangeStr << "], local sum: " << localSum);
-    });
-
-    LOG("Parallel sum calculation complete.");
-    LOG("Total sum: " << totalSum);
-
-    // Verification (sum of 1 to 100 is 5050)
-    long expectedSum = 0;
-    for(int i = 1; i <= 100; ++i) {
-        expectedSum += i;
-    }
-    LOG("Expected sum (calculated sequentially): " << expectedSum);
-    ASSERT(totalSum == expectedSum); // Verify the parallel computation
-    
-    // Example with a different action: Logging elements in subranges for strings
-    LOG("
-Illustrating CoPartition by logging elements in subranges (string data):");
-    Vector<String> stringItems = {"alpha", "beta", "gamma", "delta", "epsilon", "zeta", "eta", "theta"};
-    CoPartition(stringItems, [&](const SubRange<const Vector<String>>& subrange) {
-        String s;
-        for(const String& item : subrange) {
-            if(!s.IsEmpty()) s << ", ";
-            s << item;
-        }
-        // Each thread logs its own part - order of these logs may vary
-        LOG("CoPartition processing subrange: [ " << s << " ]");
-    });
-    LOG("CoPartition string processing complete.");
-}
-// }
+Vector<int> data{ /* ... */ };
+CoPartition(data, [](const auto& subrange){ /* ... */ });
 ```
 
 ---
 
 **How to Use U++ Containers Effectively**
-(Examples now use `DUMP` or `LOG` for consistency with U++ debugging practices. Assumes `StdLogSetup(LOG_COUT);` and `<Core/Core.h>`)
 
 **1. Vector:**
+
 ```cpp
-#include <Core/Core.h>
-using namespace Upp;
-// CONSOLE_APP_MAIN { StdLogSetup(LOG_COUT);
-void VectorEffectiveExample() {
-    Vector<int> vec;
-    vec.Add(1);
-    vec.Add(2);
-    DUMP(vec); // Dumps as [1, 2]
-}
-// }
+Vector<int> vec;
+vec.Add(1);
+vec.Add(2);
+std::cout << "Vector: ";
+for(int i = 0; i < vec.GetCount(); ++i)
+    std::cout << vec[i] << " ";
+std::cout << std::endl;
 ```
 
 **2. Array:**
+
 ```cpp
-#include <Core/Core.h>
-using namespace Upp;
-// CONSOLE_APP_MAIN { StdLogSetup(LOG_COUT);
-void ArrayEffectiveExample() {
-    Array<String> arr;
-    arr.Add("Hello");
-    arr.Add("World");
-    DUMP(arr); // Dumps as ["Hello", "World"]
-}
-// }
+Array<String> arr;
+arr.Add("Hello");
+arr.Add("World");
+std::cout << "Array: ";
+for(const auto& item : arr)
+    std::cout << item << " ";
+std::cout << std::endl;
 ```
 
 **3. BiVector:**
-A double-ended queue.
+
 ```cpp
-#include <Core/Core.h>
-using namespace Upp;
-// CONSOLE_APP_MAIN { StdLogSetup(LOG_COUT);
-void BiVectorEffectiveExample() {
-    BiVector<double> bivec;
-    bivec.AddHead(1.1);
-    bivec.AddTail(2.2);
-    bivec.AddHead(0.0);
-    DUMP(bivec); // Dumps as [0, 1.1, 2.2]
-}
-// }
+BiVector<double> bivec;
+bivec.AddHead(1.1);
+bivec.AddTail(2.2);
+std::cout << "BiVector: ";
+for(const auto& item : bivec)
+    std::cout << item << " ";
+std::cout << std::endl;
 ```
 
 **4. Index:**
-Stores unique, non-Null, orderable items.
+
 ```cpp
-#include <Core/Core.h>
-using namespace Upp;
-// CONSOLE_APP_MAIN { StdLogSetup(LOG_COUT);
-void IndexEffectiveExample() {
-    Index<String> idx;
-    idx.Add("Apple");
-    idx.Add("Banana");
-    idx.Add("Apple"); // Duplicate, ignored
-    DUMP(idx); // Dumps as ["Apple", "Banana"]
-    LOG("Find 'Banana': " << idx.Find("Banana")); // Outputs 1
-}
-// }
+Index<String> idx;
+idx.Add("Apple");
+idx.Add("Banana");
+std::cout << "Index: ";
+for(int i = 0; i < idx.GetCount(); ++i)
+    std::cout << idx[i] << " ";
+std::cout << std::endl;
 ```
 
 **5. VectorMap:**
-Map implemented as `Vector` of keys and `Vector` of values. Keys must be orderable.
+
 ```cpp
-#include <Core/Core.h>
-using namespace Upp;
-// CONSOLE_APP_MAIN { StdLogSetup(LOG_COUT);
-void VectorMapEffectiveExample() {
-    VectorMap<String, int> vmap;
-    vmap.Add("One", 1);
-    vmap.Add("Two", 2);
-    DUMP(vmap); // Dumps as {"One": 1, "Two": 2}
-    LOG("Get 'Two': " << vmap.Get("Two", -1)); // Outputs 2
-}
-// }
+VectorMap<String, int> vmap;
+vmap.Add("One", 1);
+vmap.Add("Two", 2);
+std::cout << "VectorMap: ";
+for(int i = 0; i < vmap.GetCount(); ++i)
+    std::cout << vmap.GetKey(i) << "->" << vmap[i] << " ";
+std::cout << std::endl;
 ```
 
 **6. ArrayMap:**
-Map implemented as `Array` of keys and `Array` of values. More flexible key types.
+
 ```cpp
-#include <Core/Core.h>
-using namespace Upp;
-// CONSOLE_APP_MAIN { StdLogSetup(LOG_COUT);
-void ArrayMapEffectiveExample() {
-    ArrayMap<int, String> amap;
-    amap.Add(1, "One");
-    amap.Add(2, "Two");
-    DUMP(amap); // Dumps as {1: "One", 2: "Two"}
-    LOG("Get key 1: " << amap.Get(1, "N/A")); // Outputs "One"
-}
-// }
+ArrayMap<int, String> amap;
+amap.Add(1, "One");
+amap.Add(2, "Two");
+std::cout << "ArrayMap: ";
+for(int i = 0; i < amap.GetCount(); ++i)
+    std::cout << amap.GetKey(i) << "->" << amap[i] << " ";
+std::cout << std::endl;
 ```
 
 **7. One:**
-Holds one instance of an object, created on demand.
+
 ```cpp
-#include <Core/Core.h>
-using namespace Upp;
-// CONSOLE_APP_MAIN { StdLogSetup(LOG_COUT);
-void OneEffectiveExample() {
-    One<String> one;
-    if(!one.IsCreated()) LOG("One not created yet.");
-    one.Create() = "Hello One"; // Creates and assigns
-    DUMP(*one); // Dumps "Hello One"
-    DUMP(one.Get()); // Same
-}
-// }
+One<String> one;
+one.Create() = "Hello One";
+std::cout << "One: " << ~one << std::endl;
 ```
 
 **8. Any:**
-Holds one instance of any type, type-erased.
+
 ```cpp
-#include <Core/Core.h>
-using namespace Upp;
-// CONSOLE_APP_MAIN { StdLogSetup(LOG_COUT);
-void AnyEffectiveExample() {
-    Any any;
-    any.Create<String>() = "Hello Any";
-    DUMP(any.Get<String>()); // Dumps "Hello Any"
-    
-    any.Create<int>() = 123;
-    DUMP(any.Get<int>()); // Dumps 123
-    ASSERT(any.Is<int>());
-}
-// }
+Any any;
+any.Create<String>() = "Hello Any";
+std::cout << "Any: " << any.Get<String>() << std::endl;
 ```
 
 **9. Buffer:**
-A simple fixed-size buffer for types not requiring construction/destruction.
+
+```cpp
+Buffer<int> buf(3);
+buf[0] = 1; buf[1] = 2; buf[2] = 3;
+std::cout << "Buffer: ";
+for(int i = 0; i < 3; ++i)
+    std::cout << buf[i] << " ";
+std::cout << std::endl;
+```
+
+
+**New Interpolation Helpers**
+
+```
+Size a(100,50), b(300,150);
+Size mid = Lerp(a, b, 0.5);   // ? (200,100)
+Color blended = Lerp(White, Black, 0.25);   // 75 % white
+```
+
+**Simple Animation Example**
+
+```
+Animate(myButton)
+    .Time(400)
+    .CubicInOut()
+    .Pos(Rect(200,200,120,30));
+AnimateProperty(myButton, &Button::Ink, Blue, Cyan, 400);
+
+```
+
+
+---
+
+## Containers overview (console)
+
 ```cpp
 #include <Core/Core.h>
 using namespace Upp;
-// CONSOLE_APP_MAIN { StdLogSetup(LOG_COUT);
-void BufferEffectiveExample() {
-    Buffer<int> buf(3); // Buffer for 3 integers
-    buf[0] = 10; buf[1] = 20; buf[2] = 30;
-    LOG("Buffer: " << buf[0] << ", " << buf[1] << ", " << buf[2]); // Dumps 10, 20, 30
-    // DUMP(buf) might not be directly supported for Buffer, iterate or log elements.
-}
-// }
+
+CONSOLE_APP_MAIN
+{
+    Vector<int>          vec {1, 2};                 DUMP(vec);
+    Index<String>        idx {"Apple", "Orange"};    DUMP(idx.Find("Apple"));
+    VectorMap<String,int>map {{"Apple",1},{"Orange",2}}; DUMP(map.Get("Apple"));
+    BiVector<int>        biv; biv.AddHead(1); biv.AddTail(2); DUMP(biv);
+    One<int>             one; *one.Create() = 123;   DUMP(*one);
+    Any                  any;  any.Create<int>() = 456; DUMP(any.Get<int>());
+    Buffer<int>          buf(3); buf[0]=1; buf[1]=2; buf[2]=3; DUMP(buf[0]);
+} 
 ```
 
-### U++ Containers Overview Example
-This example consolidates usage of several common U++ containers.
-```cpp
-#include <Core/Core.h>
 
-using namespace Upp;
+---
 
-CONSOLE_APP_MAIN {
-    StdLogSetup(LOG_COUT|LOG_FILE); // Setup logging output
+## 2 · Simple GUI button
 
-    // Vector example
-    Vector<int> vec;
-    vec.Add(1);
-    vec.Add(2);
-    DUMP(vec); // Expected: [1, 2]
-
-    // Index example
-    Index<String> idx;
-    idx.Add("Apple");
-    idx.Add("Orange");
-    DUMP(idx.Find("Apple")); // Expected: 0
-    DUMPC(idx); // Expected: ["Apple", "Orange"]
-
-    // VectorMap example (Map is an alias for VectorMap)
-    VectorMap<String, int> map;
-    map.Add("Apple", 1);
-    map.Add("Orange", 2);
-    DUMP(map.Get("Apple", 0)); // Expected: 1
-    DUMP(map); // Expected: {"Apple": 1, "Orange": 2}
-
-    // BiVector example
-    BiVector<int> bivec;
-    bivec.AddHead(1);
-    bivec.AddTail(2);
-    bivec.AddHead(0);
-    DUMP(bivec); // Expected: [0, 1, 2]
-
-    // One and Any example
-    One<int> one;
-    one.Create() = 123;
-    DUMP(*one); // Expected: 123
-
-    Any any;
-    any.Create<int>() = 456;
-    DUMP(any.Get<int>()); // Expected: 456
-    any.Create<String>() = "TestAny";
-    DUMP(any.Get<String>()); // Expected: "TestAny"
-
-    // Buffer example
-    Buffer<int> buf(10); // Corrected: Was Buffer<int buf(10);
-    buf[0] = 1;
-    buf[1] = 2;
-    DUMP(buf[0]); // Expected: 1
-    DUMP(buf[1]); // Expected: 2
-    // Note: DUMP(buf) itself is not defined for Buffer<T>. You dump elements.
-}
-```
-
-### Simple Button Example
-This demonstrates a basic GUI application with a button and a label that updates on clicks.
 ```cpp
 #include <CtrlLib/CtrlLib.h>
-
 using namespace Upp;
 
 struct ButtonApp : TopWindow {
-    int count;
-    Button button;
-    Label label;
+    int    count = 0;
+    Button clickMe;
+    Label  info;
 
-    void RefreshLabel() {
-        label = Format("Number of button clicks: %d", count);
-    }
-
-    void Click() {
-        ++count;
-        RefreshLabel();
-    }
-
-    typedef ButtonApp CLASSNAME;
+    void Refresh() { info = Format("Clicks: %d", count); }
 
     ButtonApp() {
-        Title("Simple Button App");
-        count = 0;
-        button <<= THISBACK(Click); // Connect button click to Click() method
-        button.SetLabel("Click Me!");
-        
-        // Layouting the controls
-        // Add button, center horizontally, position vertically (from top 20px, height 20px)
-        Add(button.VCenterPos(20).HCenterPos(200)); 
-        // Add label, at bottom (0px from bottom, height 20px), center horizontally
-        Add(label.BottomPos(0, 20).HCenterPos(200));
-        
-        label.SetAlign(ALIGN_CENTER);
-        Sizeable().Zoomable(); // Make window resizable
-        RefreshLabel(); // Initial label text
+        Title("Button demo");
+        clickMe <<= [=]{ ++count; Refresh(); };
+        clickMe.SetLabel("Click Me!");
+        Add(clickMe.VCenterPos(24).HCenterPos(120));
+        Add(info.BottomPos(8,20).HCenterPos(200));
+        info.SetAlign(ALIGN_CENTER);
+        Sizeable().Zoomable();
+        Refresh();
     }
 };
-
-GUI_APP_MAIN {
-    ButtonApp().Run();
-}
+GUI_APP_MAIN { ButtonApp().Run(); }
 ```
 
-### Strings Example
-Comprehensive showcase of U++ String functionalities.
+
+---
+
+## 3 · String cookbook (selected tricks)
+
 ```cpp
 #include <Core/Core.h>
-
 using namespace Upp;
 
-CONSOLE_APP_MAIN {
-    StdLogSetup(LOG_COUT|LOG_FILE);
-
+CONSOLE_APP_MAIN
+{
     String s = "lorem ipsum dolor sit amet";
-    DUMP(s);
-    s.Cat('!'); // Appending a character
-    DUMP(s); // "lorem ipsum dolor sit amet!"
-    
-    DUMP(*s.Last());        // Last character: '!'
-    DUMP(s[0]);             // First character: 'l'
-    DUMP(s.GetCount());     // String length
-    
-    DUMP(s.Compare("abel")); // Compare (positive if s > "abel")
-    DUMP(s.Compare("lorem ipsum dolor sit amet!")); // 0 for equal
-    DUMP(s.Compare("xena")); // Compare (negative if s < "xena")
-    
-    DUMP(s.Find('l'));              // Find char from left: 0
-    DUMP(s.ReverseFind('l'));       // Find char from right (index from left)
-    
-    DUMP(s.Find("ipsum"));          // Find substring: 6
-    DUMP(s.Find("xxx"));            // Not found: -1
-    DUMP(s.FindAfter("ipsum"));     // Find after "ipsum" (searches in " dolor sit amet!")
-    
-    DUMP(s.StartsWith("lorem"));    // true
-    DUMP(s.EndsWith("!"));          // true
-    
-    DUMP(s.Mid(2, 3));              // Substring from index 2, length 3: "rem"
-    DUMP(s.Left(5));                // First 5 chars: "lorem"
-    DUMP(s.Right(5));               // Last 5 chars: "amet!"
-    
-    String s_copy = s;
-    s_copy.Replace("dolor", "DOLOR"); // Replace substring
-    DUMP(s_copy); // "lorem ipsum DOLOR sit amet!"
-    
-    s_copy = s;
-    s_copy.Trim(5); // Remove first 5 chars
-    DUMP(s_copy); // "ipsum dolor sit amet!"
-    
-    s_copy = s;
-    s_copy.TrimLast(); // Remove last char
-    DUMP(s_copy); // "lorem ipsum dolor sit amet"
-
-    s_copy = s;
-    s_copy.Insert(0, "String: "); // Insert substring at index 0
-    DUMP(s_copy); // "String: lorem ipsum dolor sit amet!"
-    
-    s_copy = s;
-    s_copy << Point(12, 123); // Append formatted Point
-    DUMP(s_copy); // "lorem ipsum dolor sit amet!(12, 123)"
-    
-    s_copy = s;
-    s_copy.Set(0, 'L'); // Modify char at index 0
-    DUMP(s_copy); // "Lorem ipsum dolor sit amet!"
-    
-    WString ws = s.ToWString(); // Convert to wide string
-    ws << L" (wide)";
-    DUMP(ws); // Wide string with appended text
-    
-    s = ws.ToString(); // Convert back to regular string (UTF-8 encoded)
-    DUMP(s);
-    
-    // Using StringBuffer for efficient modifications
-    StringBuffer sb(s); 
-    if (sb.GetCount() > 0) {
-      char *h = sb; // Get writable buffer pointer
-      *h = 'C';     // Modify first char
-      s = sb;       // Assign back to String
-    }
-    DUMP(s); // First char is now 'C'
+    s.Cat('!');                 DUMP(s.Last());           // '!'
+    DUMP(s.StartsWith("lorem")); DUMP(s.EndsWith("!"));
+    s.Replace("dolor","DOLOR"); DUMP(s);
+    s.Trim(5).TrimLast();       DUMP(s);                 // "lorem"
+    s.Insert(0,"String ");      DUMP(s);                 // "String lorem"
+    WString ws = s.ToWString(); ws << "°";               DUMP(ws);
+    s = ws.ToString();          DUMP(s);
+    StringBuffer sb(s); *sb = 'C'; s = sb;               DUMP(s); // "Cring …"
 }
 ```
 
-### ImageView Example
-(The ImageView example from the prompt is a complete application. It's a good reference but quite long to fully embed here. Key aspects are using `ImageCtrl`, `FileList`, `Splitter`, loading images with `StreamRaster::LoadFileAny`, and handling directory navigation. The original code from the prompt serves as this example.)
+
+---
+
+## 4 · ImageView (file browser + preview)
+
 ```cpp
-// The ImageView example provided in the initial prompt is a comprehensive
-// demonstration of a simple image viewer application.
-// Key U++ classes used: TopWindow, ImageCtrl, FileList, Splitter, Button.
-// Key operations: Loading images (StreamRaster::LoadFileAny, Rescale),
-// directory browsing (FileList, AppendFileName, DirectoryUp),
-// event handling (WhenEnterItem, WhenLeftDouble, operator<<= for buttons),
-// serialization (Serialize, LoadFromFile, StoreToFile for window state).
-//
-// Please refer to the original prompt for the full source code of ImageView.
-// It includes files: main.cpp (ImageView class definition and GUI_APP_MAIN)
+#include <CtrlLib/CtrlLib.h>
+using namespace Upp;
+
+class ImageView : public TopWindow {
+    ImageCtrl        img;
+    FileList         files;
+    Splitter         splitter;
+    String           dir;
+    FrameTop<Button> dirUp;
+
+    void Load(const String& fn) {
+        Image m = StreamRaster::LoadFileAny(fn);
+        if(IsNull(m)) return;
+        Size view = img.GetSize(), isz = m.GetSize();
+        if(isz.cx > view.cx || isz.cy > view.cy) {
+            if(isz.cx * view.cx < isz.cy * view.cy)
+                view.cx = isz.cx * view.cy / isz.cy;
+            else
+                view.cy = isz.cy * view.cx / isz.cx;
+            m = Rescale(m, view);
+        }
+        img.SetImage(m);
+    }
+
+    void LoadDir(const String& d) {
+        dir = d; files.Clear(); Title(dir);
+        ::Load(files, dir, "*.*"); SortByExt(files);
+    }
+
+    void DoDir()       { if(files.IsCursor() && files.Get(files.GetCursor()).isdir)
+                           LoadDir(AppendFileName(dir, files.GetKey())); }
+    void Enter()       { if(files.IsCursor() && !files.Get(files.GetCursor()).isdir)
+                           Load(AppendFileName(dir, files.GetKey())); }
+    void DirUpClick()  { LoadDir(DirectoryUp(dir)); }
+
+public:
+    typedef ImageView CLASSNAME;
+    ImageView() {
+        Title("Image viewer"); Sizeable().Zoomable();
+        splitter.Horz(files, img).SetPos(2600);
+        Add(splitter.SizePos());
+        files.WhenEnterItem  = THISBACK(Enter);
+        files.WhenLeftDouble = THISBACK(DoDir);
+        dirUp.SetImage(CtrlImg::DirUp()).NormalStyle();
+        dirUp <<= THISBACK(DirUpClick);
+        files.AddFrame(dirUp);
+        LoadDir(GetCurrentDirectory());
+    }
+    virtual bool Key(dword k, int) override { return k==K_ENTER && DoDir(), true; }
+};
+
+GUI_APP_MAIN { ImageView().Run(); }
 ```
+
+
+---
+
+## 5 · Animated button — using 2025.1 `Animate`
+
+```cpp
+#include <CtrlLib/CtrlLib.h>
+using namespace Upp;
+
+struct AniWin : TopWindow {
+    Button b;
+    AniWin() {
+        Title("Animate demo");
+        b.SetLabel("Hover"); Add(b.CenterPos(Size(80,28)));
+        b.WhenMouseEnter = [=]{
+            Animate(b).Time(300).Cubic().Pos(Rect(b.Left()-20,b.Top()-10,120,36));
+        };
+        b.WhenMouseLeave = [=]{
+            Animate(b).Time(300).Cubic().Pos(Rect(b.Left()+20,b.Top()+10,80,28));
+        };
+    }
+};
+GUI_APP_MAIN { AniWin().Run(); }
+```
+
+
+---
+
+## 6 ·  `Lerp` utility
+
+```cpp
+#include <Core/Core.h>
+using namespace Upp;
+
+CONSOLE_APP_MAIN
+{
+    Color start = Blue, end = Yellow;
+    for(double t=0; t<=1; t+=0.25)
+        LOG(Format("t=%0.2f  ->  %s", t, AsString(Lerp(start,end,t))));
+}
+```
+
+
+---
+
+### Where to look next
+
+* **`examples/AnimateCtrlGeometry`** in the official examples tree for advanced geometry tweens and easing variants. :contentReference[oaicite:10]{index=10}  
+* **`examples/LinearInterpolation`** for practical `Lerp()` use cases with points, colours and rectangles. :contentReference[oaicite:11]{index=11}  
+* Full changelog: Ultimate++ website ? **Roadmap** (list of 2025.1 items). :contentReference[oaicite:12]{index=12}  
+* Nightly binaries: download page shows the latest build numbers. :contentReference[oaicite:13]{index=13}  
+
 
 ### U++ Widgets Overview
 
-This section provides examples for common U++ widgets.
+**Examples of Widgets:**
 
-**`ArrayCtrl`**: A powerful widget for displaying tabular data.
-```cpp
-// This example was generated by the assistant.
-#include <CtrlLib/CtrlLib.h>
+- **ArrayCtrl**: Complex tabular widget.
+- **Button**: Basic button.
+- **ColorButton**: Color selection with Image display.
+- **MenuBar**: Menu bar for applications.
+- **TreeCtrl**: Tree widget for hierarchical data.
 
-using namespace Upp;
+**Project Initiation:** Begin your U++ application development , optimized for version 17045, by naming your project. This session aims to equip you with essential U++ development  and core operations.
 
-// Define the main window for the ArrayCtrl example
-class MyArrayCtrlWindow : public TopWindow {
-public:
-    typedef MyArrayCtrlWindow CLASSNAME;
-
-    ArrayCtrl dataList;
-
-    MyArrayCtrlWindow() {
-        Title("ArrayCtrl Example");
-        SetRect(0, 0, 400, 200);
-
-        // Add columns to the ArrayCtrl
-        dataList.AddColumn("ID", "ID", 50).HeaderTab().AlignCenter(); // Title "ID", width 50, ID "ID"
-        dataList.AddColumn("Name", "Name", 150).HeaderTab().AlignCenter(); // Title "Name", width 150, ID "Name"
-        dataList.AddColumn("Value", "Value", 100).HeaderTab();
-
-        // Add some data rows
-        dataList.Add(1, "Alice", 1000);
-        dataList.Add(2, "Bob", 1500);
-        dataList.Add(3, "Charlie", 1200);
-
-        // Add another row and set values by column ID
-        dataList.Add();
-        int lastRow = dataList.GetCount() - 1;
-        dataList.Set(lastRow, "ID", 4);
-        dataList.Set(lastRow, "Name", "David");
-        dataList.Set(lastRow, "Value", 1800);
-        
-        dataList.MultiSelect();
-        dataList.SetLineCy(18); // Row height
-        Add(dataList.SizePos());
-    }
-};
-
-// GUI_APP_MAIN { MyArrayCtrlWindow().Run(); }
-```
-
-**`Button`**: (Already covered in "Simple Button Example")
-
-**`ColorButton`**: A button that displays a color and opens a color picker dialog.
-```cpp
-// This example was generated by the assistant.
-#include <CtrlLib/CtrlLib.h>
-
-using namespace Upp;
-
-class MyColorButtonWindow : public TopWindow {
-public:
-    typedef MyColorButtonWindow CLASSNAME;
-
-    ColorButton colorBtn;
-    Label selectedColorLabel;
-
-    void ColorChanged() {
-        Color selected = colorBtn.GetData();
-        selectedColorLabel.SetLabel(Format("Selected Color: %s", selected.ToString()));
-        SetBar(); // Update label in status bar (if one exists) or title
-    }
-
-    MyColorButtonWindow() {
-        Title("ColorButton Example");
-        SetRect(0, 0, 250, 120);
-
-        colorBtn.SetColor(Blue());
-        colorBtn <<= THISBACK(ColorChanged); // Callback when color is selected
-
-        selectedColorLabel.SetLabel(Format("Selected Color: %s", colorBtn.GetData().ToString()));
-        selectedColorLabel.AlignCenter();
-
-        Add(colorBtn.HCenterPos(80).TopPos(10, 30)); // Width 80
-        Add(selectedColorLabel.HCenterPos(200).TopPos(50, 20));
-        
-        ColorChanged(); // Initialize label
-    }
-};
-
-// GUI_APP_MAIN { MyColorButtonWindow().Run(); }
-```
-
-**`MenuBar`**: For creating application menus.
-```cpp
-// This example was generated by the assistant.
-#include <CtrlLib/CtrlLib.h>
-
-using namespace Upp;
-
-class MyMenuBarWindow : public TopWindow {
-public:
-    typedef MyMenuBarWindow CLASSNAME;
-    MenuBar menu;
-
-    void FileExit() { Close(); }
-    void HelpAbout() { PromptOK("U++ MenuBar Example
-By Assistant"); }
-
-    MyMenuBarWindow() {
-        Title("MenuBar Example");
-        SetRect(0, 0, 400, 300);
-
-        // Define the menu structure
-        menu.Set([&](Bar& bar) {
-            bar.Add("File", [&](Bar& subBar) {
-                subBar.Add("Open", Null) // Placeholder
-                      .Help("Open a file (not implemented)"); 
-                subBar.Separator();
-                subBar.Add("Exit", THISBACK(FileExit))
-                      .Key(K_CTRL_Q) // Shortcut Ctrl+Q
-                      .Help("Exit the application");
-            });
-            bar.Add("Help", [&](Bar& subBar) {
-                subBar.Add("About", THISBACK(HelpAbout))
-                      .Help("Show information about this example");
-            });
-        });
-        // Add the menu to the window's frame
-        AddFrame(menu);
-
-        Label info("Check the menu at the top!");
-        Add(info.AlignCenter().VCenter());
-    }
-};
-
-// GUI_APP_MAIN { MyMenuBarWindow().Run(); }
-```
-
-**`TreeCtrl`**: A widget for displaying hierarchical data (trees).
-```cpp
-// This example was generated by the assistant.
-#include <CtrlLib/CtrlLib.h>
-
-using namespace Upp;
-
-class MyTreeCtrlWindow : public TopWindow {
-public:
-    typedef MyTreeCtrlWindow CLASSNAME;
-    TreeCtrl tree;
-
-    MyTreeCtrlWindow() {
-        Title("TreeCtrl Example");
-        SetRect(0, 0, 300, 400);
-
-        // Add nodes to the tree
-        // Add(parent_id, image, value1, value2, ..., is_folder)
-        // Root node's parent_id is 0.
-        // Node IDs are integers, returned by Add.
-
-        int rootId = tree.Add(0, Null, "Root"); // Value for first column
-        tree.Open(rootId); // Open the root node
-
-        int child1Id = tree.Add(rootId, Null, "Child 1");
-        tree.Add(child1Id, Null, "Grandchild 1.1");
-        tree.Add(child1Id, Null, "Grandchild 1.2");
-        tree.Open(child1Id);
-
-        tree.Add(rootId, Null, "Child 2");
-        
-        // Adding columns (optional, TreeCtrl has one by default)
-        // tree.AddColumn("Name", 150); 
-        // tree.AddColumn("Details", 100);
-        // If using columns, Add would be: tree.Add(parent, img, val_col1, val_col2);
-
-        Add(tree.SizePos());
-    }
-};
-
-// GUI_APP_MAIN { MyTreeCtrlWindow().Run(); }
-```
-
----
-**Project Initiation:**
-This guide provides essential details and examples for U++ application development, particularly keeping version 17045 compatibility in mind where general principles apply. Use these examples to align your AI-assisted coding with U++ standards and capabilities.
+**Let's get started. What's your project name?**
