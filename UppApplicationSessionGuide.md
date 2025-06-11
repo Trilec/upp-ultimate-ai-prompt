@@ -685,6 +685,7 @@ This error indicates:
 upp-baseapp/                 ? Root folder for your U++ application
 +-- LICENSE                  ? Open source license (e.g. MIT, BSD)
 +-- README.md                ? Project description and build instructions
++-- BaseApp.upp              ? U++ .upp package files (recognized by TheIDE)
 ¦
 +-- include/                 ? Public headers for replication
 ¦   +-- myheader.h     ? Declares header files
@@ -695,9 +696,6 @@ upp-baseapp/                 ? Root folder for your U++ application
 ¦
 +-- ui/                      ? UI layout files for U++ Layout Designer
 ¦   +-- MainLayout.lay       ? Defines GUI: Start button and log output
-¦
-+-- config/                  ? U++ .upp package files (recognized by TheIDE)
-¦   +-- BaseApp.upp          ? Lists all source/layout files, dependencies, and package name
 ¦
 +-- tests/                   ? Future unit tests (e.g. frame encode/decode, socket tests)
 ¦   +-- mytestapp.cpp    ? Console-based test harness for core logic
