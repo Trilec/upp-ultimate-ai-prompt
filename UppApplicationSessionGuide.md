@@ -674,9 +674,7 @@ This error indicates:
 ? To resolve:
 
 - Ensure `.lay` file is added **first** in `.upp`
-    
 - Save all files after modifying the layout
-    
 - Do not rename `.lay` without updating all related declarations
     
 
@@ -709,7 +707,10 @@ upp-baseapp/                 ? Root folder for your U++ application
 +-- examples/                ? Minimal sample apps or integration cases
     +-- myExamples.cpp       ? (Optional) Simple examples for local testing
 
+### U++ Folder/Packaging Note:
 
+Always place the .upp file in the root of the package directory, and name the directory to match the package name.
+Avoid placing .upp files in config/ or subfolders — TheIDE will not detect them unless they’re at the top level.
 
 ### Where to look next
 
