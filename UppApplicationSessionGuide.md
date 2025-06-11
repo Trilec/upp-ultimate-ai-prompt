@@ -680,6 +680,39 @@ This error indicates:
 - Do not rename `.lay` without updating all related declarations
     
 
+### Basic folder structure
+
+upp-baseapp/                 ? Root folder for your U++ application
++-- LICENSE                  ? Open source license (e.g. MIT, BSD)
++-- README.md                ? Project description and build instructions
+¦
++-- include/                 ? Public headers for replication
+¦   +-- myheader.h     ? Declares header files
+¦
++-- src/                      ? Source files for your app and WebSocket backend
+¦   +-- mycpp.cpp     ? declares various .cpp file logic
+¦   +-- main.cpp         ? U++ GUI app entry point and layout usage
+¦
++-- ui/                      ? UI layout files for U++ Layout Designer
+¦   +-- MainLayout.lay       ? Defines GUI: Start button and log output
+¦
++-- config/                  ? U++ .upp package files (recognized by TheIDE)
+¦   +-- BaseApp.upp          ? Lists all source/layout files, dependencies, and package name
+¦
++-- tests/                   ? Future unit tests (e.g. frame encode/decode, socket tests)
+¦   +-- mytestapp.cpp    ? Console-based test harness for core logic
+¦
++-- assets/                  ? Optional: Icons, fonts, or bundled data for GUI
+¦   +-- icon.png             ? (Optional) App icon if using `TopWindow::Icon()`
+¦
++-- design/                  ? Diagrams, notes, or sketches related to API structure or UI
+¦   +-- ws_architecture.md   ? (Optional) Dev notes for frame structure, callbacks, etc.
+¦
++-- examples/                ? Minimal sample apps or integration cases
+    +-- myExamples.cpp       ? (Optional) Simple examples for local testing
+
+
+
 ### Where to look next
 
 - **`examples/AnimateCtrlGeometry`** in the official examples tree for advanced geometry tweens and easing variants. :contentReference[oaicite:10]{index=10}
