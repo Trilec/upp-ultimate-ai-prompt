@@ -1,7 +1,6 @@
 ### U++ Application Development Session Guide
 
-We will be developing a C++ application using the U++ development framework.
-The following is the mandate and coding details along with examples to help ensure that any code aligns with the framework's capabilities and standards.
+We will be developing a C++ application using the U++ development framework . The following is the mandate and coding details along with examples to help ensure that any code aligns with the framework's capabilities and standards.
 
 #### Conformity Mandate
 
@@ -32,6 +31,7 @@ catch(const Exc& e) {
 Additional information:
 
 ### 1. Introduction
+
 U++ significantly reduces the complexity of desktop application development. The following example demonstrates an application that calculates the number of days between two dates, updating as the user edits the input fields.
 
 **Example Code:**
@@ -62,15 +62,18 @@ GUI_APP_MAIN {
 ```
 
 ### 2. Everything Belongs Somewhere
+
 In U++, most objects are tied to a logical scope, reducing the need for `new` and `delete` operators. Pointers are used only for pointing to things, not for managing heap resources. This results in deterministic and automatic resource management, similar to or better than garbage-collected languages like Java or C#.
 
 ### 3. U++ Containers
+
 U++ avoids standard C++ library containers for GUI development due to the strict copy-constructor requirement of STL containers. Instead, U++ offers two container types:
 
 - **Vector**: Requires `Moveable` for types, providing fast performance.
 - **Array**: No type requirements, offering flexibility at a slight performance cost.
 
 ### 4. Widget Ownership
+
 Widgets in U++ are always owned by the client code, not the GUI toolkit. This ensures that widgets are independent entities, accessible even when not part of a visible GUI.
 
 **Example:**
@@ -84,6 +87,7 @@ struct MyDialog {
 ```
 
 ### 5. Dialog Templates as C++ Templates
+
 U++ uses C++ templates for layout designs, which are reflected in code as templates that derive from widget classes. This eliminates the need for widget IDs or names.
 
 **Example:**
@@ -98,18 +102,22 @@ struct WithMyDialogLayout : public T {
 ```
 
 ### 6. Value and Null
+
 U++'s `Value` type allows dynamic data storage and retrieval. `Null` represents an empty value and is supported by most U++ types.
 
 ### 7. Display and Convert
+
 `Convert` classes in U++ handle bidirectional `Value` conversions, often between logical and textual representations. `Display` classes define how `Value` objects are presented in the GUI.
 
 ### 8. Function
+
 U++ uses `Upp::Function`, similar to `std::function`, for handling output actions with C++ lambdas. Unlike `std::function`, `Upp::Function` does nothing when unassigned, making it safer for GUI events.
 
 ### 9. U++ Widgets
+
 U++ provides a comprehensive set of widgets, with flexible options for creating custom widgets as needed.
 
----
+* * *
 
 **Essential Details from the U++ Core**
 
@@ -229,7 +237,7 @@ Vector<int> data{ /* ... */ };
 CoPartition(data, [](const auto& subrange){ /* ... */ });
 ```
 
----
+* * *
 
 **How to Use U++ Containers Effectively**
 
@@ -332,7 +340,6 @@ for(int i = 0; i < 3; ++i)
 std::cout << std::endl;
 ```
 
-
 **New Interpolation Helpers**
 
 ```
@@ -352,8 +359,7 @@ AnimateProperty(myButton, &Button::Ink, Blue, Cyan, 400);
 
 ```
 
-
----
+* * *
 
 ## Containers overview (console)
 
@@ -373,8 +379,7 @@ CONSOLE_APP_MAIN
 } 
 ```
 
-
----
+* * *
 
 ## 2 · Simple GUI button
 
@@ -403,8 +408,7 @@ struct ButtonApp : TopWindow {
 GUI_APP_MAIN { ButtonApp().Run(); }
 ```
 
-
----
+* * *
 
 ## 3 · String cookbook (selected tricks)
 
@@ -426,8 +430,7 @@ CONSOLE_APP_MAIN
 }
 ```
 
-
----
+* * *
 
 ## 4 · ImageView (file browser + preview)
 
@@ -486,8 +489,7 @@ public:
 GUI_APP_MAIN { ImageView().Run(); }
 ```
 
-
----
+* * *
 
 ## 5 · Animated button — using 2025.1 `Animate`
 
@@ -511,10 +513,9 @@ struct AniWin : TopWindow {
 GUI_APP_MAIN { AniWin().Run(); }
 ```
 
+* * *
 
----
-
-## 6 ·  `Lerp` utility
+## 6 · `Lerp` utility
 
 ```cpp
 #include <Core/Core.h>
@@ -528,16 +529,167 @@ CONSOLE_APP_MAIN
 }
 ```
 
+* * *
 
----
+#### ?? JSON Support – `Core/JSON.h` Only
+
+- JSON parsing and serialization is handled via:
+    
+    ```cpp
+    Value ParseJSON(CParser& p);
+    Value ParseJSON(const char* s);
+    String AsJSON(const Value&, bool pretty = false);
+    ```
+    
+- Use `Json`, `JsonArray`, `JsonIO`, and `Jsonize(...)` templates for all JSON encoding/decoding.
+    
+- Do **not** use any third-party libraries like `nlohmann/json`.
+    
+
+* * *
+
+#### ?? Websockets and External Libraries
+
+- There is **no built-in WebSocket library** in U++.
+    
+- Do not assume support for:
+    
+    - CMake
+        
+    - Boost
+        
+    - REST APIs
+        
+    - Qt or GTK integration
+        
+    - Other third-party serialization libraries
+        
+
+* * *
+
+#### Package Structure & Build System
+
+- U++ uses `.upp` files to declare packages and dependencies.
+    
+- Each `.upp` lists source files and layout files.
+    
+- The U++ build system is **self-contained**. It does not use Makefiles or CMake.
+    
+- Packages may depend on others via `uses` declarations in `.upp`.
+    
+
+* * *
+
+## U++ `.layout` Files: Usage and Integration
+
+- **Location & Usage:**
+    
+    - Place your `.lay` (layout) file in your package directory.
+    - In your package's main header (usually at the top), include the `.lay` file using the `#define LAYOUTFILE <yourfile.lay>` directive, before including `lay.h` or `lay0.h`.
+    - Example:
+        
+        ```cpp
+        #define LAYOUTFILE <MyApp/MyLayout.lay>
+        #include <CtrlCore/lay.h>
+        ```
+        
+- **Macro Expansion:**
+    
+    - The `LAYOUTFILE` macro tells the preprocessor which layout file to include.
+    - Including `lay.h` or `lay0.h` expands the layout into C++ structures and helper functions.
+    - For each layout in the `.lay` file, a struct named `With<LayoutName><BaseClass>` is generated, allowing you to create UI classes that inherit from this struct.
+    - Example expansion for a layout named `MyWindow`:
+        
+        ```cpp
+        template<class T> struct WithMyWindow<T> : public T, public MyWindow__layid { ... };
+        ```
+        
+- **Assumptions & Naming:**
+    
+    - The macro assumes the `.lay` file is correctly referenced by the `LAYOUTFILE` macro.
+    - The names given to layouts and controls inside the `.lay` file are used as class and variable names in the generated code.
+    - The generated helper functions (e.g., `SetLayout_<LayoutName>`) use the layout's name.
+- **.upp File Placement:**
+    
+    - The `.layout` include and macro expansion should ideally be at the top of your main package header (`.h`) file, not directly in the `.upp` file.
+    - The `.upp` file is a package descriptor; it doesn’t process code but should list the `.lay` file under the `file` section so it’s included in the build.
+- **Example in Practice:**
+    
+    ```cpp
+    // MyApp.h
+    #define LAYOUTFILE <MyApp/MyLayout.lay>
+    #include <CtrlCore/lay.h>
+    ```
+    
+    ```cpp
+    // MyApp.upp
+    file
+        MyApp.h
+        MyLayout.lay
+        ...
+    ```
+    
+
+* * *
+
+**Summary:**
+
+- Reference your `.lay` file using `LAYOUTFILE` before including `lay.h`.
+- The macro and header generate C++ code, using names from the `.lay` file to create UI classes and functions.
+- Ensure the `.lay` file is listed in your `.upp` package file for proper inclusion.
+
+#### Layouts: Auto-Generated UI Declarations (`.lay` files)
+
+- Layouts are designed via the **Layout Designer** and saved as `.lay` files.
+    
+- Each layout must be included using:
+    
+    ```cpp
+    #define LAYOUTFILE <MyWindow.layout>
+    #include <CtrlCore/lay.h>  // expands to #include LAYOUTFILE
+    ```
+    
+- The `.lay` file must be:
+    
+    - Present **at the top** of the `.upp` package file
+        
+    - Saved in the IDE at least once to generate the corresponding `.layout` file
+        
+- U++ auto-generates a header file (e.g., `MyWindow.lay.h`) during the build phase.
+    
+
+**Failure to save or register the layout file results in:**
+
+```
+fatal error: 'MyWindow.layout' file not found
+```
+
+This error indicates:
+
+- The layout wasn't saved or generated yet
+    
+- The `.lay` file wasn’t added to the `.upp` file, or wasn't added early enough
+    
+
+? To resolve:
+
+- Ensure `.lay` file is added **first** in `.upp`
+    
+- Save all files after modifying the layout
+    
+- Do not rename `.lay` without updating all related declarations
+    
 
 ### Where to look next
 
-* **`examples/AnimateCtrlGeometry`** in the official examples tree for advanced geometry tweens and easing variants. :contentReference[oaicite:10]{index=10}  
-* **`examples/LinearInterpolation`** for practical `Lerp()` use cases with points, colours and rectangles. :contentReference[oaicite:11]{index=11}  
-* Full changelog: Ultimate++ website ? **Roadmap** (list of 2025.1 items). :contentReference[oaicite:12]{index=12}  
-* Nightly binaries: download page shows the latest build numbers. :contentReference[oaicite:13]{index=13}  
+- **`examples/AnimateCtrlGeometry`** in the official examples tree for advanced geometry tweens and easing variants. :contentReference[oaicite:10]{index=10}
+- **`examples/LinearInterpolation`** for practical `Lerp()` use cases with points, colours and rectangles. :contentReference[oaicite:11]{index=11}
+- Full changelog: Ultimate++ website ? **Roadmap** (list of 2025.1 items). :contentReference[oaicite:12]{index=12}
+- Nightly binaries: download page shows the latest build numbers. :contentReference[oaicite:13]{index=13}
+- Documentation https://www.ultimatepp.org/www$uppweb$documentation$en-us.html
+- Cloned repository [https://github.com/Trilec/ultimatepp  (to ensure any coding solutions are consistent in the latest U++ version)](https://github.com/Trilec/ultimatepp)
 
+&nbsp;
 
 ### U++ Widgets Overview
 
