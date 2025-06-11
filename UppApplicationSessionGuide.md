@@ -687,7 +687,7 @@ This error indicates:
 - Full changelog: Ultimate++ website ? **Roadmap** (list of 2025.1 items). :contentReference[oaicite:12]{index=12}
 - Nightly binaries: download page shows the latest build numbers. :contentReference[oaicite:13]{index=13}
 - Documentation https://www.ultimatepp.org/www$uppweb$documentation$en-us.html
-- Cloned repository [https://github.com/Trilec/ultimatepp  (to ensure any coding solutions are consistent in the latest U++ version)](https://github.com/Trilec/ultimatepp)
+- Latest repository [https://github.com/ultimatepp/ultimatepp/tree/next2025_1 (to ensure any coding solutions are consistent in the latest U++ version)](https://github.com/ultimatepp/ultimatepp/tree/next2025_1)
 
 &nbsp;
 
