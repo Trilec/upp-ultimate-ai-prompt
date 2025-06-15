@@ -343,9 +343,81 @@ public:
 GUI_APP_MAIN { ImageView().Run(); }
 ```
 
-### 7. Further Resources
 
-*   **Official Examples**: Explore `examples/AnimateCtrlGeometry` and `examples/LinearInterpolation` in the U++ source tree.
-*   **Changelog**: See the Ultimate++ website ? **Roadmap** for a list of all features in the 2025.1 release.
-*   **Documentation**: [Official U++ Documentation](https://www.ultimatepp.org/www$uppweb$documentation$en-us.html)
-*   **Source Repository**: [U++ GitHub Repository (next2025_1 branch)](https://github.com/ultimatepp/ultimatepp/tree/next2025_1)
+
+### RichTextObject  use (setting a QTF object in text format)
+`#include <RichEdit/RichEdit.h>`
+iif using the  RichEdit For text ediing , Maintain a RichText object, which acts as the data model for the entire log or text.
+To add a line, append the new formatted text to this RichText data object.
+Tell the RichEdit control to display this updated RichText object using the public Set() method.
+To scroll to the bottom, use the public MoveEnd() method, (moves the cursor to the end )
+
+  
+```cpp
+struct MyRichObjectType : public RichObjectType
+{
+    virtual String GetTypeName(const Value&) const;
+    virtual void   Paint(const Value& data, Draw& w, Size sz) const;
+    virtual bool   IsText() const;
+    virtual void   Menu(Bar& bar, RichObject& ex, void *context) const;
+    virtual void   DefaultAction(RichObject& ex) const;
+    void Edit(RichObject& ex) const;
+    typedef MyRichObjectType CLASSNAME;
+};
+```
+ 
+
+
+## additional documentation and session-wide guidelines
+
+1. **Canonical sources** – verify answers against *uppsrc* or an official doc page (overview, caveats, leaks, tutorials). ([ultimatepp.org][1], [ultimatepp.org][2])
+2. **Version-neutral replies** – if an API changed, show both signatures and name the branch or tag.
+3. **Memory & ownership** – favour value semantics; containers use *pick* transfer (pass-by-value moves and clears). `Null` is lost when copied to plain C++ types. ([ultimatepp.org][3])
+4. **Widgets** – never declare `Ctrl`-derived objects as global/static; use `Single<>` or factories.
+5. **Threading & GUI** – only the main thread may open/close windows or run message loops; guard other threads with `GuiLock`.
+6. **Static linking default** – ship static binaries unless shared builds are requested (faster start-up, self-contained).
+7. **Platform limits** – x86 / AMD64 / ARM / PowerPC; little- or big-endian; 32-/64-bit; `Moveable` support required.
+8. **OOM policy** – U++ aborts on allocation failure; don’t wrap constructors in `try/catch` for OOM.
+9. **Leak-hunting** – use `MemoryBreakpoint(serial)` from the `.log`; wrap third-party code in `MemoryIgnoreLeaksBlock`. ([ultimatepp.org][4])
+10. **Quick pitfall check** –
+
+    * `x.At(i) = x[q];` reference invalidated by reallocation.
+    * `x.Add(x.Top())` / `x.Add(x[0])` copies a soon-invalid reference.
+    * `void Fn(Array<T> a)` moves data out of the caller.
+    * `INITBLOCK/EXITBLOCK` can be dropped; prefer `INITIALIZE/INITIALIZER`.
+11. **JSON** – use `Core/JSON.h` (`ParseJSON`, `AsJSON`, `Jsonize`); never add third-party JSON libs without approval.
+12. **Assistant behaviour** – always verify first, avoid external deps, explain version deltas, return minimal compilable snippets, and warn (gently) when a request clashes with U++ design.
+
+---
+
+## Core documentation (one-line bullets)
+
+* Overview – [https://www.ultimatepp.org/www\$uppweb\$overview\$en-us.html](https://www.ultimatepp.org/www$uppweb$overview$en-us.html) – high-level goals & RAD ethos. ([ultimatepp.org][1])
+* Docs hub – [https://www.ultimatepp.org/www\$uppweb\$documentation\$en-us.html](https://www.ultimatepp.org/www$uppweb$documentation$en-us.html) – master index. ([ultimatepp.org][2])
+* Core tutorial – [https://www.ultimatepp.org/srcdoc\$Core\$Tutorial\$en-us.html](https://www.ultimatepp.org/srcdoc$Core$Tutorial$en-us.html) – `String`, `Vector`, streams, etc. ([ultimatepp.org][4])
+* GUI tutorial – [https://www.ultimatepp.org/srcdoc\$CtrlLib\$Tutorial\$en-us.html](https://www.ultimatepp.org/srcdoc$CtrlLib$Tutorial$en-us.html) – first window to callbacks. ([ultimatepp.org][2])
+* Containers / NTL – [https://www.ultimatepp.org/srcdoc\$Core\$NTL\_en-us.html](https://www.ultimatepp.org/srcdoc$Core$NTL_en-us.html) – container specs & move rules. ([ultimatepp.org][3])
+* Caveats – [https://www.ultimatepp.org/srcdoc\$Core\$Caveats\_en-us.html](https://www.ultimatepp.org/srcdoc$Core$Caveats_en-us.html) – traps & pitfalls.
+* Leak guide – [https://www.ultimatepp.org/srcdoc\$Core\$Leaks\_en-us.html](https://www.ultimatepp.org/srcdoc$Core$Leaks_en-us.html) – built-in leak detector. ([ultimatepp.org][4])
+* Heap API – [https://www.ultimatepp.org/src\$Core\$Heap\_en-us.html](https://www.ultimatepp.org/src$Core$Heap_en-us.html) – low-level alloc/free helpers. ([ultimatepp.org][5])
+* Design decisions – [https://www.ultimatepp.org/srcdoc\$Core\$Decisions\_en-us.html](https://www.ultimatepp.org/srcdoc$Core$Decisions_en-us.html) – static linking, OOM abort, endian limits.
+* Moveable types – [https://www.ultimatepp.org/srcdoc\$Core\$Moveable\_en-us.html](https://www.ultimatepp.org/srcdoc$Core$Moveable_en-us.html) – `Moveable<T>` + pick semantics.
+* Tutorials index – [https://www.ultimatepp.org/www\$uppweb\$Tutorials\$en-us.html](https://www.ultimatepp.org/www$uppweb$Tutorials$en-us.html) – every Core/Draw/SQL/IDE tutorial.
+
+---
+
+## GitHub quick-map
+
+* master – [https://github.com/ultimatepp/ultimatepp/tree/master](https://github.com/ultimatepp/ultimatepp/tree/master) – latest committed code. ([github.com][6])
+* next2025\_1 – [https://github.com/ultimatepp/ultimatepp/tree/next2025\_1](https://github.com/ultimatepp/ultimatepp/tree/next2025_1) – upcoming 2025.1 branch.
+
+  * `uppsrc/Core` – containers, memory, threads, JSON
+  * `uppsrc/CtrlCore` – windowing & event loop
+  * `uppsrc/CtrlLib` – widgets & layouts
+  * `uppsrc/Draw` – 2-D engine
+  * `examples`, `tutorial`, `benchmarks`, `upptst` – demos & tests
+
+  > *Tip:* headers and sources sit in the same folder; press **`t`** in GitHub for fuzzy file search or **`/`** for quick symbol search.
+
+---
+
