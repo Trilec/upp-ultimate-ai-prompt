@@ -1,4 +1,4 @@
-### U++ Application Development Guide V05
+### U++ Application Development Guide V06
 
 This guide serves as a living document for developing applications with the U++ framework. It consolidates our discoveries, best practices, and coding standards to ensure consistency and provide a head start for any new development work.
 
@@ -433,6 +433,54 @@ struct MyRichObjectType : public RichObjectType
 -   **JSON** – Use `Core/JSON.h` (`ParseJSON`, `AsJSON`, `Jsonize`); never add third-party JSON libs without approval.
 -   **Assistant behaviour** – Always verify first, avoid external deps, explain version deltas, return minimal compilable snippets, and warn (gently) when a request clashes with U++ design.
 
+#### Pitfalls and additional discoveries:
+- Preserving Feature Integrity During Refactoring: When fixing bugs, it's easy to oversimplify or replace complex code with a simpler version to isolate the problem. This can lead to accidentally removing important, working features. 
+- Pitfall: Losing the Bezier easing generator while fixing compiler errors. Best Practice: Before committing to a change, review it against the project's goals. Ensure that bug fixes do not come at the cost of core functionality. If a feature must be temporarily disabled for testing, make a clear note to restore it before finalizing the work.
+
+
+Choose the Right Smart Pointer for the Job: The choice of smart pointer dictates the ownership semantics of your class.
+
+- One<T>: Unique, movable ownership. Use this when an object should have exactly one owner, and ownership can be transferred but not shared. It is the U++ equivalent of std::unique_ptr.
+- Ptr<T> (with Pte<T>): Shared, reference-counted ownership. Use this when multiple, non-hierarchical objects need to share the lifetime of a single resource. The resource is destroyed only when the last Ptr to it is destroyed. It is the U++ equivalent of std::shared_ptr.
+
+- Pitfall: Using One<T> when the object's lifetime needed to be shared across an Array and a global timer. This mismatch between intent (sharing) and tool (unique ownership) was the root cause of the heap corruption.
+
+- Best Practice: When an object's lifetime must outlive its original creator and be managed by multiple other objects, shared ownership via Ptr<T> is the correct, safe, and idiomatic U++ solution.
+
+Universal Crash & Leak Prevention Cheat-Sheet
+==============================================
+
+Symptoms  
+• exit-code `0xC0000374` / `3221225***`  
+• “heap leaks detected” on exit  
+• window vanishes after first paint  
+
+### U++ Generic Pitfall Cheat-Sheet 
+
+#### Root-Cause Pattern ? Fast Diagnostic ? One-Line Fix
+---------------------------------------------------
+
+| Pattern | Quick Test | Bullet-Proof Habit |
+|---|---|---|
+| **Dangling Ctrl*** | Crash after window close ? stack in `Value::IsNull()` | Always null-check `owner->GetTopWindow()` before use. |
+| **SetTimeCallback signature** | Compiler: “assigning void to void*” | `SetTimeCallback(ms, &TickFn, &cookie)` — cookie is **int**, not `void*`. |
+| **Function<> lifetime** | Debug CRT ? “invalid heap pointer” | Store `Function<>` inside **owning object** (`One<>`); never copy elsewhere. |
+| **Mixed ownership** (`Ptr`, `One`, raw `delete`) | Count `delete` vs constructors | Pick **one strategy** (unique, shared, intrusive) and stick to it. |
+| **Lambda captures raw pointer** | Search for `[=] { use(ptr); }` | Capture **values** or use `Ptr<>` as weak observer. |
+| **Missing U++ type** | Error: “Rect is undefined” | Include `<Core/Gtypes.h>` or fully qualify `Upp::Rect`. |
+| **Global static Ctrl-derived objects** | Crash on exit | Never declare `static Ctrl` or `static TopWindow`; use `Single<>` or heap. |
+| **Namespace collision** | Error: “reference to non-static member” | Inside lambdas, fully qualify U++ types: `Upp::Rect`, `Upp::Point`. |
+| **Typo hides class name** | Compiler says *“must use ‘class’ tag”* | Keep return type **exactly once**; never write `Type& Type&`. |
+| **Timer callback after object destroyed** | Crash on window close | In timer loop: `if(!owner || !owner->GetTopWindow()) remove`. |
+| **Double delete / use-after-free** | Run in **debug CRT** ? look for “invalid heap pointer” | One owner ? rest are **raw pointers**. |
+| **Typo hides class name** | Compiler says *“must use ‘class’ tag”* | Keep return type **exactly once**; never write `Type& Type&`. |
+
+Golden Rule  
+“**One clear owner, everything else observes.**”  
+If you ever think “maybe somebody else will free it”, you already have a bug.
+
+
+
 #### Appendix B: Official Documentation Links
 -   **Overview** – `https://www.ultimatepp.org/www$uppweb$overview$en-us.html` – High-level goals & RAD ethos.
 -   **Docs hub** – `https://www.ultimatepp.org/www$uppweb$documentation$en-us.html` – Master index.
@@ -442,6 +490,24 @@ struct MyRichObjectType : public RichObjectType
 -   **Caveats** – `https://www.ultimatepp.org/srcdoc$Core$Caveats_en-us.html` – Traps & pitfalls.
 -   **Leak guide** – `https://www.ultimatepp.org/srcdoc$Core$Leaks_en-us.html` – Built-in leak detector.
 -   **Design decisions** – `https://www.ultimatepp.org/srcdoc$Core$Decisions_en-us.html` – Static linking, OOM abort, endian limits.
+-   **RichText (Quixotic Text Format (QTF)**- `https://www.ultimatepp.org/srcdoc$RichText$QTF_en-us.html`
+
+Source Location"
+https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/CtrlCore/CtrlCore.h
+https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/CtrlCore/CtrlAttr.cpp
+https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/CtrlCore/Ctrl.cpp
+https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/CtrlCore/CtrlFrame.cpp
+https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/CtrlCore/CtrlDraw.cpp
+https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/Core/Gtypes.h
+https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/Core/Value.h
+https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/Draw/Draw.h
+
+Additional helpful links for U++ specific behaviour
+https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/Core/Function.h
+https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/Core/One.h
+https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/Core/Ptr.h
+https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/Core/Pte.h
+https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/Core/Timer.h
 
 #### Appendix C: GitHub Quick-Map
 -   **master** – `https://github.com/ultimatepp/ultimatepp/tree/master` – Latest committed code.
@@ -452,6 +518,8 @@ struct MyRichObjectType : public RichObjectType
     -   `uppsrc/Draw` – 2-D engine
     -   `examples`, `tutorial`, `benchmarks`, `upptst` – demos & tests
     > *Tip:* headers and sources sit in the same folder; press **`t`** in GitHub for fuzzy file search.
+
+
 
 #### Appendix D: Verified Widget API Reference
 A list of common widgets and their core public methods, with citations from the official U++ documentation.
