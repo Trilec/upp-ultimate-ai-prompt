@@ -1,22 +1,19 @@
-### U++ Application Development Guide V06
+U++ Application Development Guide V07
 
 This guide serves as a living document for developing applications with the U++ framework. It consolidates our discoveries, best practices, and coding standards to ensure consistency and provide a head start for any new development work.
 
-### 1\. Introduction: The U++ Philosophy
+U++ Philosophy
 
-U++ is a C++ rapid application development framework that aims to simplify complex tasks, especially for desktop applications. Its core philosophy revolves around deterministic resource management and tight integration between the library and the build system.
+U++ is a C++ rapid application development framework designed to simplify complex tasks, particularly for desktop applications. Its core philosophy emphasizes deterministic resource management and tight integration between the library and the build system. Most objects are tied to a logical scope, reducing the need for manual memory management with new and delete. Pointers are primarily for pointing, not owning heap resources, resulting in automatic and deterministic resource management that is often more predictable than garbage-collected languages.
 
-A key principle in U++ is that most objects are tied to a logical scope, which drastically reduces the need for manual memory management with `new` and `delete`. Pointers are primarily for pointing, not for owning heap resources. This results in automatic and deterministic resource management that is often more predictable than garbage-collected languages.
+Project Setup and Build System
 
-### 2\. Project Setup & Build System
+Setting up a U++ project correctly is critical for smooth development. The framework uses a self-contained build system that does not rely on external tools like Make or CMake.
 
-U++ uses a self-contained build system that does not rely on external tools like Make or CMake. Understanding its components is key to setting up a project correctly.
+Project Folder Structure
 
-#### Basic Folder Structure
+A well-organized project enhances navigability. Below is the recommended structure:
 
-A well-organized project is easier to navigate. Here is a recommended structure:
-
-```
 upp-baseapp/         ? Root folder for your U++ application
 +-- BaseApp.upp      ? U++ package file (must be in root)
 +-- main.cpp         ? Main application entry point
@@ -29,25 +26,24 @@ upp-baseapp/         ? Root folder for your U++ application
 ¦
 +-- ui/              ? UI layout files from the Layout Designer
 ¦   +-- MyLayout.lay
--- assets/           ? assets like icons or json files etc
+¦
++-- assets/          ? Assets like icons or JSON files
 ¦   +-- myicon.png
 ¦
 +-- design/          ? Diagrams, notes, and design documentation
     +-- design.md
-```
+The .upp Package File
 
-#### The `.upp` Package File
+The .upp file defines the package’s dependencies, source files, and build configurations.
 
-The `.upp` file is the heart of a U++ package. It declares dependencies, source files, and build configurations.
+Location: Must be in the root of the package directory for TheIDE detection.
+Dependencies: Use the uses directive to link packages like Core and CtrlLib.
+Files: List all .cpp, .h, and .lay files.
+Main Package: The mainconfig section marks the package as an executable, visible in TheIDE’s “Select main package” dialog.
+Note: The .upp file does not support comments.
 
--   **Location:** Always place the `.upp` file in the root of the package directory. TheIDE will not detect it otherwise.
--   **Dependencies:** Use the `uses` directive to link against other packages like `Core` and `CtrlLib`.
--   **Files:** List all source (`.cpp`), header (`.h`), and layout (`.lay`) files.
--   **Main Package:** The `mainconfig` section marks a package as an executable application, making it appear in TheIDE's "Select main package" dialog.
+Example .upp File:
 
-**Example `.upp` File:**
-*Important: the .upp file DOES NOT support comments.*
-```upp
 description "Comprehensive UI test harness\377";
 
 uses
@@ -70,167 +66,28 @@ file
 
 mainconfig
     "" = "GUI";
-```
+Connecting .upp, .h, and .lay Files
 
-#### The `.upp` / `.h` / `.lay` Connection: A Critical Link
+A frequent build issue arises from path mismatches between the .upp file and the C++ header’s LAYOUTFILE macro.
 
-A common and difficult-to-diagnose build failure occurs when the build system cannot find a `.lay` file. This is caused by a path mismatch between the `.upp` file and the C++ header.
+Rule: The path in #define LAYOUTFILE <path> must be relative to an include path in the .upp file.
+Example: If the .upp file includes include /ui;, and the layout is at ui/MyLayout.lay, use #define LAYOUTFILE <MyLayout.lay> in the header.
+Incorrect Usage: #define LAYOUTFILE <MyPackage/ui/MyLayout.lay> causes a build failure as the build system prepends the include path, searching for ui/MyPackage/ui/MyLayout.lay.
+Core Library Essentials
 
--   **Rule:** The path in `#define LAYOUTFILE <path>` must be **relative to an `include` path** defined in the `.upp` file.
--   **Example:** If your `.upp` file contains `include /ui;`, and your layout is at `ui/MyLayout.lay`, then your header file must use `#define LAYOUTFILE <MyLayout.lay>`.
--   **Incorrect:** `#define LAYOUTFILE <MyPackage/ui/MyLayout.lay>` will fail because the build system will prepend the include path, resulting in a search for `ui/MyPackage/ui/MyLayout.lay`.
+The Core library provides foundational tools for U++ applications.
 
-### 3\. The Core Library: Your Essential Toolkit
+Containers
 
-The `Core` library provides the fundamental building blocks for any U++ application.
+U++ offers optimized containers with move semantics:
 
-#### Containers: The U++ Way
-U++ provides its own container library, optimized for performance and move semantics.
--   **`Vector<T>`**: A dynamic array that is extremely fast. It requires that the type `T` be moveable.
--   **`Array<T>`**: A more flexible dynamic array that has no special requirements for type `T`.
--   **`One<T>`**: A smart pointer for single object ownership. Using `One<T>` inside a container like `Vector<One<MyObject>>` is the preferred way to manage unique ownership of complex objects.
--   **Other Containers**: U++ also provides `BiVector`, `Index`, `VectorMap`, and `ArrayMap`.
+Vector<T>: A fast dynamic array requiring moveable T.
+Array<T>: A flexible dynamic array with no type restrictions.
+One<T>: A smart pointer for single object ownership. Use Vector<One<MyObject>> for unique ownership of complex objects.
+Other Containers: BiVector, Index, VectorMap, ArrayMap.
 
-#### String Manipulation
-`String` is a fundamental U++ type with a rich set of methods for common tasks. For direct character modification, use a `StringBuffer`.
+Example:
 
-#### Value, Null, and Polymorphism
-The `Value` type is a powerful variant-like class that can hold data of almost any type. `Null` represents an empty or invalid value. `ValueArray` and `ValueMap` allow for collections of heterogeneous data.
-
-#### Error Handling
-U++ uses an exception model based on the `Exc` class.
-```cpp
-try {
-    FileIn fin("non_existent_file.txt");
-    if(!fin) throw Exc("Cannot open data.txt");
-}
-catch(const Exc& e) {
-    LOG(e);
-    PromptOK(e);
-}
-```
-
-#### Streams and Serialization (including JSON)
-U++ provides a stream interface for I/O and a built-in serialization framework.
--   **File Streams**: `FileIn`, `FileOut`, and `FileAppend` provide easy file access.
--   **Serialization**: `StoreAsString` and `LoadFromString` can serialize many U++ objects.
--   **JSON**: For web and configuration tasks, U++ has a built-in JSON parser in `Core/JSON.h`. Do not use third-party JSON libraries.
-
-#### Ranges and Algorithms
-U++ provides a set of algorithms that operate on its containers and ranges.
-```cpp
-Vector<int> data {3, 1, 2};
-Sort(data);
-int index = FindIndex(data, 2); // index is 1
-auto subrange = SubRange(data, 1, 2); // Range containing {2, 3}
-```
-
-#### Multithreading and Parallelism
-The `CoWork` and `Thread` classes provide high-level abstractions for concurrent and parallel execution. `CoPartition` can distribute tasks over multiple cores.
-```cpp
-// Distribute a task over multiple cores
-Vector<int> data{ /* ... */ };
-CoPartition(data, [](const auto& subrange){ /* process subrange */ });
-```
-
-### 4\. Building Graphical User Interfaces (GUIs)
-
-The `CtrlLib` package contains everything needed to build a modern GUI.
-
-#### Widgets and Ownership
-In U++, widgets are plain C++ objects owned by your code, not by a global toolkit.
-
-#### Events and Callbacks
-U++ uses `Upp::Function` for callbacks. An unassigned `Upp::Function` does nothing when called, preventing crashes. Lambdas are the modern way to assign callbacks using the `<<=` operator.
-
-#### Animation and Interpolation
-U++ 2025.1 introduced powerful animation and interpolation helpers.
--   **`Lerp(a, b, t)`**: Linearly interpolates between two values.
--   **`Animate(...)`**: Animates a widget's properties over time.
-
-#### The U++ Layout System: Principles and Best Practices
-UIs are visually designed in the **Layout Designer** and saved as `.lay` files. The single most important principle to understand is that the `.lay` file is a tool for **arrangement**, not for defining **parent-child relationships**.
-
-**Basic Workflow:**
-1.  **Create Layout:** Design your UI in TheIDE and save it (e.g., `ui/MyLayout.lay`).
-2.  **List in `.upp`:** Add the `.lay` file to your package's `.upp` file.
-3.  **Include in Code:** Use the `LAYOUTFILE` macro in your header file *before* including `<CtrlCore/lay.h>`.
-
-```cpp
-// In MyWindow.h
-#define LAYOUTFILE <MyApp/ui/MyLayout.lay>
-#include <CtrlCore/lay.h>
-
-// This creates a template: template<class T> struct WithMyLayout<T>
-class MyWindow : public WithMyLayout<TopWindow> { /* ... */ };
-```
-
-**Layout Rules:**
-
--   **Rule 1: Parenting is a C++ Responsibility**
-    -   **DO:** Define all parent-child widget relationships exclusively in C++ code.
-    -   **DO NOT:** Assume the `.lay` file defines parent-child relationships.
-
--   **Rule 2: One Layout Block Per File**
-    -   **DO:** Enforce a strict one-to-one mapping: one C++ component class corresponds to one `.lay` file with one `LAYOUT(...)` block.
-    -   **DO NOT:** Place multiple `LAYOUT(...)` blocks in a single `.lay` file. TheIDE will delete all but one upon saving.
-
--   **Rule 3: Handling Dynamic Containers (`Splitter`, `TabCtrl`)**
-    -   **DO:** Declare the manager widget (`Splitter`) and its panes (`ParentCtrl`, etc.) as member variables in the C++ header.
-    -   **DO:** Assign the panes to their roles in the C++ constructor (e.g., `splitter.Horz(leftPane, rightPane);`).
-    -   **DO NOT:** Define the panes as `ITEM`s in the same `.lay` file as their manager.
-
--   **Rule 4: The Purpose of `ParentCtrl`**
-    -   **DO:** Use `ParentCtrl` as a generic, programmable container in your C++ class, populating it with `panelHost.Add(...)`.
-    -   **DO NOT:** Mistake `ParentCtrl` for a tool to create parent-child relationships within the `.lay` file.
-
--   **Rule 5: Layout Naming Must Be Exact**
-    -   **DO:** Ensure the name in `LAYOUT(ClassName, ...)` exactly matches the class name in `class MyClass : public WithClassName<...>;`.
-    -   **DO NOT:** Use different names. This will break `CtrlLayout` and cause `undeclared identifier` errors.
-
--   **Rule 6: Use Real Widgets for Panel Switching**
-    -   **DO:** Use a standard `ParentCtrl` as a host and manage visibility by calling `.Show()` and `.Hide()` on the child panels directly.
-    -   **DO NOT:** Assume a specialized "switcher" widget exists. The assistant may hallucinate class names like `StaticSwitcher`. Stick to verified components.
-
-### 5\. Project Mandates & Best Practices
-
-This section outlines the specific rules and philosophies governing our project.
-
-#### Coding Standards
--   **U++ Version**: Build with 2025.1 (build 17799) or newer.
--   **Naming Conventions:** `PascalCase` for classes/structs, `camelCase` for methods/variables, `UPPER_CASE_SNAKE_CASE` for constants.
--   **Header Guards:** Utilize `#pragma once`.
--   **Formatting:** Use 4-space indentation. Keep code clean, sorted, and concise.
--   **API Stability**: Change public APIs only by addition.
--   **Inlining**: Inline small functions (= 4 lines).
--   **Dark Mode**: Derive colors from the theme using `SColor...` or `AColor...`.
--   **Comments**: Use T++ doc style for formal documentation; simple `//` comments are fine for implementation notes. Avoid Doxygen.
--   **Patterns**: Avoid the Builder pattern as it is not idiomatic in U++.
-
-#### Asset Management
--   **Images (`.iml`):** The `.iml` file contains binary image data. Images **must** be added via TheIDE's Image Designer. They are compiled into the application.
--   **Application Icon (`.ico`):** The `.ico` file in the project root is the application icon. Be aware that using "save .ico and .png" in the Image Designer will overwrite this file and save image assets to the root directory. This option should usually be unchecked.
-
-#### Development Philosophy
--   **Verify, Don't Assume**: Before designing around any feature, you **must** verify its existence in the official U++ source code for our target version. Do not trust external knowledge sources without this verification.
--   **U++ Ecosystem First**: The default is to use the U++ ecosystem. Do not introduce external dependencies (e.g., Boost, `nlohmann/json`) or build tools (e.g., CMake) without explicit team approval.
--   **Check the Source**: The ultimate source of truth is the `uppsrc` directory. When in doubt, check the headers and examples there.
-
-#### Directives for AI Collaboration
-To maximize productivity and minimize errors when working with an AI assistant, the following directives must be enforced.
--   **The User's Code is the Source of Truth:** The AI must never regress a file or remove functionality the user has added. When providing code, the AI must always start from the last known-good state provided by the user.
--   **No Unrequested Logic:** The AI must not hallucinate or add new logic, controls, or functionality that was not explicitly requested.
--   **API Verification is Mandatory:** The AI must not suggest any U++ class or function without first verifying its existence and correct usage against the official documentation or `uppsrc`. This is non-negotiable.
-
-### 6\. Code Cookbook: Practical Examples
-
-A collection of standalone, official examples to demonstrate common U++ patterns.
-
-#### Core Library Snippets (Console Apps)
-<details>
-<summary><strong>Containers Overview</strong></summary>
-
-```cpp
 #include <Core/Core.h>
 using namespace Upp;
 
@@ -244,12 +101,12 @@ CONSOLE_APP_MAIN
     Any                  any;  any.Create<int>() = 456; DUMP(any.Get<int>());
     Buffer<int>          buf(3); buf[0]=1; buf[1]=2; buf[2]=3; DUMP(buf[0]);
 }
-```
-</details>
-<details>
-<summary><strong>String Cookbook</strong></summary>
+String Manipulation
 
-```cpp
+The String class offers robust methods for manipulation, with StringBuffer for direct character modification.
+
+Example:
+
 #include <Core/Core.h>
 using namespace Upp;
 
@@ -265,29 +122,63 @@ CONSOLE_APP_MAIN
     s = ws.ToString();          DUMP(s);
     StringBuffer sb(s); *sb = 'C'; s = sb;               DUMP(s); // "Cring …"
 }
-```
-</details>
-<details>
-<summary><strong>Lerp Utility</strong></summary>
+Value, Null, and Polymorphism
 
-```cpp
-#include <Core/Core.h>
-using namespace Upp;
+The Value type is a versatile variant-like class, with Null indicating an empty or invalid value. ValueArray and ValueMap support heterogeneous data collections.
 
-CONSOLE_APP_MAIN
-{
-    Color start = Blue, end = Yellow;
-    for(double t=0; t<=1; t+=0.25)
-        LOG(Format("t=%0.2f  ->  %s", t, AsString(Lerp(start,end,t))));
+Error Handling
+
+U++ uses the Exc class for exceptions.
+
+Example:
+
+try {
+    FileIn fin("non_existent_file.txt");
+    if(!fin) throw Exc("Cannot open data.txt");
 }
-```
-</details>
+catch(const Exc& e) {
+    LOG(e);
+    PromptOK(e);
+}
+Streams and Serialization
 
-#### GUI Snippets (GUI Apps)
-<details>
-<summary><strong>Simple GUI Button</strong></summary>
+U++ provides stream interfaces and serialization capabilities:
 
-```cpp
+File Streams: FileIn, FileOut, FileAppend for file operations.
+Serialization: StoreAsString and LoadFromString for object serialization.
+JSON: Use Core/JSON.h for parsing (ParseJSON, AsJSON, Jsonize). Avoid third-party JSON libraries.
+Ranges and Algorithms
+
+U++ algorithms operate on containers and ranges.
+
+Example:
+
+Vector<int> data {3, 1, 2};
+Sort(data);
+int index = FindIndex(data, 2); // index is 1
+auto subrange = SubRange(data, 1, 2); // Range containing {2, 3}
+Multithreading and Parallelism
+
+CoWork and Thread simplify concurrent and parallel tasks. CoPartition distributes tasks across cores.
+
+Example:
+
+Vector<int> data{ /* ... */ };
+CoPartition(data, [](const auto& subrange){ /* process subrange */ });
+GUI Development with CtrlLib
+
+The CtrlLib package provides tools for building modern graphical user interfaces.
+
+Widgets and Ownership
+
+Widgets are plain C++ objects owned by your code, not a global toolkit.
+
+Events and Callbacks
+
+U++ uses Upp::Function for callbacks, with lambdas assigned via <<= for safe execution.
+
+Example: Simple GUI Button
+
 #include <CtrlLib/CtrlLib.h>
 using namespace Upp;
 
@@ -310,12 +201,15 @@ struct ButtonApp : TopWindow {
     }
 };
 GUI_APP_MAIN { ButtonApp().Run(); }
-```
-</details>
-<details>
-<summary><strong>Animated Button</strong></summary>
+Animation and Interpolation
 
-```cpp
+Introduced in U++ 2025.1, animation helpers enhance UI dynamics:
+
+Lerp(a, b, t): Linearly interpolates between two values.
+Animate(...): Animates widget properties over time.
+
+Example: Animated Button
+
 #include <CtrlLib/CtrlLib.h>
 using namespace Upp;
 
@@ -333,12 +227,35 @@ struct AniWin : TopWindow {
     }
 };
 GUI_APP_MAIN { AniWin().Run(); }
-```
-</details>
-<details>
-<summary><strong>ImageView (File Browser + Preview)</strong></summary>
+Layout System
 
-```cpp
+The U++ Layout Designer saves UI designs as .lay files, focusing on arrangement, not parent-child relationships.
+
+Workflow:
+
+Design UI in TheIDE, saving as ui/MyLayout.lay.
+Add the .lay file to the .upp file.
+Use LAYOUTFILE macro in the header before including <CtrlCore/lay.h>.
+
+Example:
+
+// In MyWindow.h
+#define LAYOUTFILE <MyApp/ui/MyLayout.lay>
+#include <CtrlCore/lay.h>
+
+class MyWindow : public WithMyLayout<TopWindow> { /* ... */ };
+
+Layout Rules:
+
+Parenting: Define parent-child relationships in C++ code, not .lay files.
+One Layout per File: Use one LAYOUT(...) block per .lay file.
+Dynamic Containers: Declare Splitter or TabCtrl panes as C++ member variables and assign in the constructor.
+ParentCtrl: Use as a programmable container, not for defining relationships in .lay.
+Naming: Ensure LAYOUT(ClassName, ...) matches the class name in WithClassName<...>.
+Panel Switching: Use ParentCtrl with .Show()/.Hide() for dynamic visibility.
+
+Example: Image Viewer
+
 #include <CtrlLib/CtrlLib.h>
 using namespace Upp;
 
@@ -387,19 +304,18 @@ public:
 };
 
 GUI_APP_MAIN { ImageView().Run(); }
-```
-</details>
-<details>
-<summary><strong>RichText & RichEdit</strong></summary>
+RichText and RichEdit
 
-To use `RichEdit`, you must `#include <RichEdit/RichEdit.h>`.
--   Maintain a `RichText` object as the data model for the text.
--   To add a line, append formatted text to this `RichText` object.
--   Tell the `RichEdit` control to display the updated model using its public `Set()` method.
--   To scroll to the bottom, use the public `MoveEnd()` method, which moves the cursor to the end.
+For RichEdit, include <RichEdit/RichEdit.h> and manage text via a RichText object.
 
-You can also define custom objects to embed in the text:
-```cpp
+Example Workflow:
+
+Append formatted text to RichText.
+Update RichEdit with Set().
+Scroll to the bottom with MoveEnd().
+
+Custom Object Example:
+
 struct MyRichObjectType : public RichObjectType
 {
     virtual String GetTypeName(const Value&) const;
@@ -410,160 +326,341 @@ struct MyRichObjectType : public RichObjectType
     void Edit(RichObject& ex) const;
     typedef MyRichObjectType CLASSNAME;
 };
-```
-</details>
+Coding Standards and Best Practices
+Coding Conventions
+U++ Version: Use 2025.1 (build 17799) or newer.
+Naming: Use PascalCase for classes, camelCase for methods/variables, UPPER_CASE_SNAKE_CASE for constants.
+Header Guards: Use #pragma once.
+Formatting: 4-space indentation, clean and concise code.
+API Stability: Only add to public APIs, avoid breaking changes.
+Inlining: Inline functions = 4 lines.
+Dark Mode: Use SColor... or AColor... for theme-derived colors.
+Comments: Use T++ doc style for formal documentation; // for implementation notes. Avoid Doxygen.
+Patterns: Avoid the Builder pattern, as it’s not idiomatic in U++.
+Asset Management
+Images (.iml): Add via TheIDE’s Image Designer; compiled into the application.
+Application Icon (.ico): Place in the project root. Avoid overwriting with “save .ico and .png” in Image Designer.
+Development Philosophy
+Verify Features: Check uppsrc for feature existence before implementation.
+U++ Ecosystem: Prefer U++ libraries over external dependencies like Boost or nlohmann/json.
+Source of Truth: Consult uppsrc headers and examples for clarity.
+AI Collaboration Directives
+User Code as Source: Never regress or remove user-added functionality.
+No Unrequested Logic: Avoid adding unrequested features or controls.
+API Verification: Confirm U++ class/function usage against uppsrc or documentation.
+Smart Pointers and Ownership
 
-### 7\. Appendices: Reference Material
+Choosing the correct smart pointer ensures proper resource management:
 
-#### Appendix A: General Development Guidelines
-1.  **Canonical sources** – Verify answers against `uppsrc` or an official doc page.
-2.  **Version-neutral replies** – If an API changed, show both signatures and name the branch or tag.
-3.  **Memory & ownership** – Favour value semantics; containers use *pick* transfer (pass-by-value moves and clears). `Null` is lost when copied to plain C++ types.
-4.  **Widgets** – Never declare `Ctrl`-derived objects as global/static; use `Single<>` or factories.
-5.  **Threading & GUI** – Only the main thread may open/close windows or run message loops; guard other threads with `GuiLock`.
-6.  **Static linking default** – Ship static binaries unless shared builds are requested.
-7.  **Platform limits** – x86 / AMD64 / ARM / PowerPC; little- or big-endian; 32-/64-bit; `Moveable` support required.
--   **OOM policy** – U++ aborts on allocation failure; don’t wrap constructors in `try/catch` for OOM.
--   **Leak-hunting** – Use `MemoryBreakpoint(serial)` from the `.log`; wrap third-party code in `MemoryIgnoreLeaksBlock`.
--   **Quick pitfall check** –
-    -   `x.At(i) = x[q];` reference invalidated by reallocation.
-    -   `x.Add(x.Top())` / `x.Add(x[0])` copies a soon-invalid reference.
-    -   `void Fn(Array<T> a)` moves data out of the caller.
-    -   `INITBLOCK/EXITBLOCK` can be dropped; prefer `INITIALIZE/INITIALIZER`.
--   **JSON** – Use `Core/JSON.h` (`ParseJSON`, `AsJSON`, `Jsonize`); never add third-party JSON libs without approval.
--   **Assistant behaviour** – Always verify first, avoid external deps, explain version deltas, return minimal compilable snippets, and warn (gently) when a request clashes with U++ design.
+One<T>: For unique, movable ownership, equivalent to std::unique_ptr.
+Ptr<T> (with Pte<T>): For shared, reference-counted ownership, similar to std::shared_ptr.
 
-#### Pitfalls and additional discoveries:
-- Preserving Feature Integrity During Refactoring: When fixing bugs, it's easy to oversimplify or replace complex code with a simpler version to isolate the problem. This can lead to accidentally removing important, working features. 
-- Pitfall: Losing the Bezier easing generator while fixing compiler errors. Best Practice: Before committing to a change, review it against the project's goals. Ensure that bug fixes do not come at the cost of core functionality. If a feature must be temporarily disabled for testing, make a clear note to restore it before finalizing the work.
+Pitfall Example: Using One<T> for shared ownership caused heap corruption. Use Ptr<T> when multiple objects need to share a resource’s lifetime.
 
+Best Practice:
 
-Choose the Right Smart Pointer for the Job: The choice of smart pointer dictates the ownership semantics of your class.
+if (live_) live_->anim = nullptr; // Prevent scheduler access after destruction
+Scheduler::Inst().Remove(live_);
+live_ = nullptr;
+Common Pitfalls and Solutions
+General Pitfalls
+Dangling Ctrl: Null-check owner->GetTopWindow() to avoid crashes.
+SetTimeCallback: Use SetTimeCallback(ms, &TickFn, &cookie) with int cookie.
+Function Lifetime: Store Function<> in owning objects to prevent heap issues.
+Mixed Ownership: Consistently use one ownership strategy (Ptr, One, or raw pointers).
+Lambda Captures: Capture values or use Ptr<> to avoid dangling pointers.
+Global Ctrl Objects: Use Single<> or heap allocation, not static Ctrl.
+Timer Callbacks: Guard against stale objects in timer loops.
 
-- One<T>: Unique, movable ownership. Use this when an object should have exactly one owner, and ownership can be transferred but not shared. It is the U++ equivalent of std::unique_ptr.
-- Ptr<T> (with Pte<T>): Shared, reference-counted ownership. Use this when multiple, non-hierarchical objects need to share the lifetime of a single resource. The resource is destroyed only when the last Ptr to it is destroyed. It is the U++ equivalent of std::shared_ptr.
+Crash Prevention Cheat-Sheet:
 
-- Pitfall: Using One<T> when the object's lifetime needed to be shared across an Array and a global timer. This mismatch between intent (sharing) and tool (unique ownership) was the root cause of the heap corruption.
+Pattern	Quick Test	Bullet-Proof Habit
+Dangling Ctrl	Crash after window close ? stack in Value::IsNull()	Null-check owner->GetTopWindow().
+SetTimeCallback signature	Compiler: “assigning void to void*”	Use int cookie in SetTimeCallback.
+Function<> lifetime	Debug CRT ? “invalid heap pointer”	Store Function<> in owning object.
+Mixed ownership	Count delete vs constructors	Stick to one ownership strategy.
+Lambda captures raw pointer	Search for [=] { use(ptr); }	Capture values or use Ptr<>.
+Missing U++ type	Error: “Rect is undefined”	Include <Core/Gtypes.h> or qualify Upp::Rect.
+Global static Ctrl	Crash on exit	Use Single<> or heap allocation.
+Namespace collision	Error: “reference to non-static member”	Fully qualify U++ types in lambdas.
+Timer callback after destroy	Crash on window close	Check owner existence in timer loop.
+Double delete	Debug CRT ? “invalid heap pointer”	Assign one owner, use raw pointers for observers.
+UI and Graphics Pitfalls
+Name Collisions
 
-- Best Practice: When an object's lifetime must outlive its original creator and be managed by multiple other objects, shared ownership via Ptr<T> is the correct, safe, and idiomatic U++ solution.
+Avoid identifiers like near, far, min, max, or GetMessage due to potential macro conflicts.
 
-Universal Crash & Leak Prevention Cheat-Sheet
-==============================================
+Example:
 
-Symptoms  
-• exit-code `0xC0000374` / `3221225***`  
-• “heap leaks detected” on exit  
-• window vanishes after first paint  
+// BAD
+auto near = [&](Pointf a) { /* ... */ };
 
-### U++ Generic Pitfall Cheat-Sheet 
+// GOOD
+auto is_near = [&](Pointf a) { /* ... */ };
+Point vs. Pointf
 
-#### Root-Cause Pattern ? Fast Diagnostic ? One-Line Fix
----------------------------------------------------
+Use explicit casts to avoid narrowing errors with Pointf.
 
-| Pattern | Quick Test | Bullet-Proof Habit |
-|---|---|---|
-| **Dangling Ctrl*** | Crash after window close ? stack in `Value::IsNull()` | Always null-check `owner->GetTopWindow()` before use. |
-| **SetTimeCallback signature** | Compiler: “assigning void to void*” | `SetTimeCallback(ms, &TickFn, &cookie)` — cookie is **int**, not `void*`. |
-| **Function<> lifetime** | Debug CRT ? “invalid heap pointer” | Store `Function<>` inside **owning object** (`One<>`); never copy elsewhere. |
-| **Mixed ownership** (`Ptr`, `One`, raw `delete`) | Count `delete` vs constructors | Pick **one strategy** (unique, shared, intrusive) and stick to it. |
-| **Lambda captures raw pointer** | Search for `[=] { use(ptr); }` | Capture **values** or use `Ptr<>` as weak observer. |
-| **Missing U++ type** | Error: “Rect is undefined” | Include `<Core/Gtypes.h>` or fully qualify `Upp::Rect`. |
-| **Global static Ctrl-derived objects** | Crash on exit | Never declare `static Ctrl` or `static TopWindow`; use `Single<>` or heap. |
-| **Namespace collision** | Error: “reference to non-static member” | Inside lambdas, fully qualify U++ types: `Upp::Rect`, `Upp::Point`. |
-| **Typo hides class name** | Compiler says *“must use ‘class’ tag”* | Keep return type **exactly once**; never write `Type& Type&`. |
-| **Timer callback after object destroyed** | Crash on window close | In timer loop: `if(!owner || !owner->GetTopWindow()) remove`. |
-| **Double delete / use-after-free** | Run in **debug CRT** ? look for “invalid heap pointer” | One owner ? rest are **raw pointers**. |
-| **Typo hides class name** | Compiler says *“must use ‘class’ tag”* | Keep return type **exactly once**; never write `Type& Type&`. |
+Example:
 
-Golden Rule  
-“**One clear owner, everything else observes.**”  
-If you ever think “maybe somebody else will free it”, you already have a bug.
+int half = 40;
+Pointf local[4] = {
+    Pointf((double)-half, (double)-half),
+    Pointf((double) half, (double)-half),
+    Pointf((double) half, (double) half),
+    Pointf((double)-half, (double) half),
+};
+Colors and Alpha
 
+Some backends ignore alpha in DrawText. Animate color or position instead.
 
+Example:
 
-#### Appendix B: Official Documentation Links
--   **Overview** – `https://www.ultimatepp.org/www$uppweb$overview$en-us.html` – High-level goals & RAD ethos.
--   **Docs hub** – `https://www.ultimatepp.org/www$uppweb$documentation$en-us.html` – Master index.
--   **Core tutorial** – `https://www.ultimatepp.org/srcdoc$Core$Tutorial$en-us.html` – `String`, `Vector`, streams, etc.
--   **GUI tutorial** – `https://www.ultimatepp.org/srcdoc$CtrlLib$Tutorial$en-us.html` – First window to callbacks.
--   **Containers / NTL** – `https://www.ultimatepp.org/srcdoc$Core$NTL_en-us.html` – Container specs & move rules.
--   **Caveats** – `https://www.ultimatepp.org/srcdoc$Core$Caveats_en-us.html` – Traps & pitfalls.
--   **Leak guide** – `https://www.ultimatepp.org/srcdoc$Core$Leaks_en-us.html` – Built-in leak detector.
--   **Design decisions** – `https://www.ultimatepp.org/srcdoc$Core$Decisions_en-us.html` – Static linking, OOM abort, endian limits.
--   **RichText (Quixotic Text Format (QTF)**- `https://www.ultimatepp.org/srcdoc$RichText$QTF_en-us.html`
+RGBA a{31,41,55, (byte)alpha};
+Color c(a);
+w.DrawRect(rc, c);
+w.DrawText(x, y, "Label", f, c); // Alpha may be ignored
+Clip Stacks
 
-Source Location"
+Always pair Clipoff() with End().
+
+Example:
+
+w.Clipoff(0, 0, sz.cx, sz.cy);
+w.End();
+Mouse Drag
+
+Use SetCapture()/ReleaseCapture() for drag operations.
+
+Example:
+
+virtual void LeftDown(Point p, dword) override {
+    SetCapture();
+    dragging = true;
+}
+virtual void MouseMove(Point p, dword) override {
+    if (!dragging) return;
+    if (!GetMouseLeft()) { dragging = false; ReleaseCapture(); Refresh(); return; }
+}
+virtual void LeftUp(Point, dword) override {
+    dragging = false;
+    ReleaseCapture();
+}
+virtual void MouseLeave() override {
+    if (!GetMouseLeft() && dragging) { dragging = false; ReleaseCapture(); Refresh(); }
+}
+Responsive Layouts
+
+Recompute sizes in TopWindow::Layout() to avoid clipping.
+
+Example:
+
+virtual void Layout() override {
+    Size sz = GetSize();
+    int rightX = 210, gap = 10, cols = 2, rows = 4;
+    int rightW = max(240, sz.cx - rightX - gap);
+    int rightH = max(200, sz.cy - 20);
+    int tileW = max(220, (rightW - (cols - 1) * gap) / cols);
+    int tileH = max(120, (rightH - (rows - 1) * gap) / rows) - 20;
+    for (int i = 0; i < demos.GetCount(); ++i) {
+        int r = i / cols, c = i % cols;
+        int x = rightX + c * (tileW + gap);
+        int y = 10 + r * (tileH + 20 + gap);
+        demos[i].caption.LeftPos(x, tileW).TopPos(y, 18);
+        demos[i].canvas.LeftPos(x, tileW).TopPos(y + 20, tileH);
+    }
+}
+Animation Timing
+
+Use normalized timing helpers for smooth animations.
+
+Example:
+
+static inline double Seg01(double p, double a0, double a1) {
+    if (p <= a0) return 0.0; if (p >= a1) return 1.0; return (p - a0) / max(1e-9, (a1 - a0));
+}
+static inline int LerpI(int a, int b, double t) { return int(a + (b-a)*t + 0.5); }
+Exception-Safe Timers
+
+Guard timer callbacks against exceptions.
+
+Example:
+
+struct Stepper {
+    TimeCallback t;
+    void Start() { t.Set(16, THISBACK(Tick)); }
+    void Tick() {
+        bool ok = true;
+        try { /* update state */ }
+        catch(...) { ok = false; }
+        if(ok) t.Set(16, THISBACK(Tick));
+    }
+};
+Fonts and Metrics
+
+Recalculate text sizes on resize.
+
+Example:
+
+Font title = StdFont().Bold().Height(clamp(sz.cy/10, 14, 42));
+Size ts = GetTextSize("Hello", title);
+int x = (sz.cx - ts.cx)/2;
+Pixel-Precise Drawing
+
+Round floats to integers for stable rendering.
+
+Example:
+
+int x = int(center + radius * cos(theta) + 0.5);
+int y = int(center + radius * sin(theta) + 0.5);
+Balanced Transforms
+
+Ensure every transform or clip is closed.
+
+Example:
+
+w.Clipoff(0, 0, sz.cx, sz.cy);
+// Draw operations
+w.End();
+Manual Timing
+
+Use manual ticking for deterministic animations.
+
+Example:
+
+int64 wall_now = msecs();
+if (manual_last_now == 0) manual_last_now = wall_now;
+int64 dt = wall_now - manual_last_now;
+if (max_ms_per_tick > 0) dt = min<int64>(dt, max_ms_per_tick);
+manual_last_now += max<int64>(0, dt);
+RunFrame(manual_last_now);
+Array Lengths
+
+Use portable alternatives to __countof.
+
+Example:
+
+template <class T, size_t N> constexpr int CountOf(T (&)[N]) { return int(N); }
+int n = CountOf(kEases);
+Drag Math
+
+Map pixel coordinates to normalized values.
+
+Example:
+
+const int inset = 6;
+double sx = 200.0 / (sz.cx - 2*inset);
+double sy = 200.0 / (sz.cy - 2*inset);
+Pointf nf(clamp((p.x - inset) * sx / 200.0, 0.0, 1.0),
+          clamp(1.0 - (p.y - inset) * sy / 200.0, 0.0, 1.0));
+p0.y = nf.y;
+p3.y = nf.y;
+Consistent Layout Styles
+
+Choose either anchored layouts or manual SetRect(), not both.
+
+Thread Safety
+
+Keep GUI operations on the main thread, using callbacks for background updates.
+
+Performance Optimization
+Mark large types as Moveable<T> for efficient Vector operations.
+Use Vector<T>::SetCount(n) for preallocation to avoid repeated Add().
+Logging
+
+Use Cout() for diagnostics, avoiding debug prints in hot paths.
+
+Example Applications
+Responsive Tile Grid
+class Tile : public Ctrl {
+public:
+    virtual void Paint(Draw& w) override {
+        Size sz = GetSize();
+        w.DrawRect(sz, SColorFace());
+        int pad = max(8, sz.cx/40);
+        Rect inner = RectC(pad, pad, sz.cx-2*pad, sz.cy-2*pad);
+        w.DrawRect(inner, White());
+        w.DrawRect(inner.left, inner.top, inner.Width(), 1, Color(220,225,235));
+    }
+};
+
+class Window : public TopWindow {
+    Tile tiles[4];
+public:
+    Window() { Title("Responsive Grid").Sizeable(); for(auto& t: tiles) Add(t.SizePos()); }
+    virtual void Layout() override {
+        Size sz = GetSize(); int gap=10; int cols=2; int rows=2;
+        int W = (sz.cx - (cols+1)*gap)/cols;
+        int H = (sz.cy - (rows+1)*gap)/rows;
+        for(int i=0;i<4;++i){
+            int r=i/cols, c=i%cols;
+            tiles[i].SetRect(gap + c*(W+gap), gap + r*(H+gap), W, H);
+        }
+    }
+};
+Safe Dragging Control
+class Draggable : public Ctrl {
+    bool dragging=false; Point start;
+public:
+    virtual void LeftDown(Point p, dword) override { dragging=true; start=p; SetCapture(); Refresh(); }
+    virtual void LeftUp(Point, dword) override { dragging=false; ReleaseCapture(); Refresh(); }
+    virtual void MouseMove(Point p, dword) override {
+        if(!dragging) return;
+        if(!GetMouseLeft()) { dragging=false; ReleaseCapture(); Refresh(); return; }
+        // use p - start
+    }
+};
+Appendices
+General Development Guidelines
+Canonical Sources: Verify against uppsrc or official documentation.
+Version-Neutral APIs: Show both old and new signatures if APIs change.
+Memory and Ownership: Favor value semantics; use Null carefully.
+Widgets: Avoid global/static Ctrl objects; use Single<> or factories.
+Threading: Restrict GUI operations to the main thread with GuiLock.
+Static Linking: Default to static binaries.
+OOM Policy: U++ aborts on allocation failure; avoid try/catch for OOM.
+Leak Detection: Use MemoryBreakpoint and MemoryIgnoreLeaksBlock.
+JSON: Use Core/JSON.h exclusively.
+Official Documentation Links
+Overview: https://www.ultimatepp.org/www$uppweb$overview$en-us.html
+Docs Hub: https://www.ultimatepp.org/www$uppweb$documentation$en-us.html
+Core Tutorial: https://www.ultimatepp.org/srcdoc$Core$Tutorial$en-us.html
+GUI Tutorial: https://www.ultimatepp.org/srcdoc$CtrlLib$Tutorial$en-us.html
+Containers: https://www.ultimatepp.org/srcdoc$Core$NTL_en-us.html
+Caveats: https://www.ultimatepp.org/srcdoc$Core$Caveats_en-us.html
+Leak Guide: https://www.ultimatepp.org/srcdoc$Core$Leaks_en-us.html
+Design Decisions: https://www.ultimatepp.org/srcdoc$Core$Decisions_en-us.html
+RichText (QTF): https://www.ultimatepp.org/srcdoc$RichText$QTF_en-us.html
+GitHub Source Links
+Master Branch: https://github.com/ultimatepp/ultimatepp/tree/master
+Next 2025.1 Branch: https://github.com/ultimatepp/ultimatepp/tree/next2025_1
+Key Files:
 https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/CtrlCore/CtrlCore.h
-https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/CtrlCore/CtrlAttr.cpp
-https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/CtrlCore/Ctrl.cpp
-https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/CtrlCore/CtrlFrame.cpp
-https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/CtrlCore/CtrlDraw.cpp
-https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/Core/Gtypes.h
-https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/Core/Value.h
-https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/Draw/Draw.h
-
-Additional helpful links for U++ specific behaviour
 https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/Core/Function.h
 https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/Core/One.h
 https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/Core/Ptr.h
-https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/Core/Pte.h
-https://github.com/ultimatepp/ultimatepp/blob/master/uppsrc/Core/Timer.h
-
-#### Appendix C: GitHub Quick-Map
--   **master** – `https://github.com/ultimatepp/ultimatepp/tree/master` – Latest committed code.
--   **next2025_1** – `https://github.com/ultimatepp/ultimatepp/tree/next2025_1` – Upcoming 2025.1 branch.
-    -   `uppsrc/Core` – containers, memory, threads, JSON
-    -   `uppsrc/CtrlCore` – windowing & event loop
-    -   `uppsrc/CtrlLib` – widgets & layouts
-    -   `uppsrc/Draw` – 2-D engine
-    -   `examples`, `tutorial`, `benchmarks`, `upptst` – demos & tests
-    > *Tip:* headers and sources sit in the same folder; press **`t`** in GitHub for fuzzy file search.
-
-
-
-#### Appendix D: Verified Widget API Reference
-A list of common widgets and their core public methods, with citations from the official U++ documentation.
-<details>
-<summary><strong>ArrayCtrl</strong></summary>
-
-`ArrayCtrl` displays and edits tabular data.
-- `int GetCount() const` – returns the number of rows.
-- `void Clear()` – clears all rows.
-- `Value Get(int row, int col) const` – retrieves the cell value at (row, col).
-- `void Set(int row, int col, const Value& v)` – sets the cell value.
-- `void Add(...)` – appends a row with provided values.
-- `void Insert(int row, ...)` – inserts a new row at a specific index.
-</details>
-<details>
-<summary><strong>Bar, MenuBar, ToolBar</strong></summary>
-
-`Bar` is the abstract base for `MenuBar` and `ToolBar`.
-- `Item& Add(const char* text, const Image& image, const Callback& cb)` – adds a menu or toolbar item.
-- `Item& Sub(const char* text, const Function<void(Bar&)>& submenu)` – adds a submenu.
-- `void Separator()` – inserts a visual separator.
-- `void Break()` – breaks to a new line/column in a `ToolBar`.
-</details>
-<details>
-<summary><strong>Button, ButtonOption</strong></summary>
-
-`Button` is a standard clickable control. `ButtonOption` is a two-state toggle.
-- `Button& SetImage(const Image& img)` – sets the button icon.
-- `Button& Ok()` / `Cancel()` / `Exit()` – designate default dialog roles.
-- `ButtonOption& Set(bool b)` – sets the state of a `ButtonOption`.
-- `bool Get() const` – returns the current state of a `ButtonOption`.
-</details>
-<details>
-<summary><strong>Option</strong></summary>
-
-`Option` is a radio-button-style on/off selector.
-- `void Set(bool b)` / `operator=(bool b)` – sets the state.
-- `bool Get() const` – retrieves the state.
-- `void SetGroup(int g)` - Assigns the option to a group, making it mutually exclusive with others in the same group.
-</details>
-<details>
-<summary><strong>Static Widgets</strong></summary>
-
-`StaticRect`, `StaticLine`, `SeparatorCtrl`, etc., draw non-interactive shapes.
-- `SeparatorCtrl& Margin(int w)` / `Margin(int l, int r)` – set margins.
-- `SeparatorCtrl& SetSize(int w)` – minimal size.
-</details>
+Widget API Reference
+ArrayCtrl
+int GetCount() const
+void Clear()
+Value Get(int row, int col) const
+void Set(int row, int col, const Value& v)
+void Add(...)
+void Insert(int row, ...)
+Bar, MenuBar, ToolBar
+Item& Add(const char* text, const Image& image, const Callback& cb)
+Item& Sub(const char* text, const Function<void(Bar&)>& submenu)
+void Separator()
+void Break()
+Button, ButtonOption
+Button& SetImage(const Image& img)
+Button& Ok() / Cancel() / Exit()
+ButtonOption& Set(bool b)
+bool Get() const
+Option
+void Set(bool b) / operator=(bool b)
+bool Get() const
+void SetGroup(int g)
+Static Widgets
+SeparatorCtrl& Margin(int w) / Margin(int l, int r)
+SeparatorCtrl& SetSize(int w)
