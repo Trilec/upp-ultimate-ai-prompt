@@ -1,4 +1,4 @@
-# U++ Application Development Guide V07
+# U++ Application Development Guide V08
 
 This guide serves as a living document for developing applications with the U++ framework. It consolidates our discoveries, best practices, and coding standards to ensure consistency and provide a head start for any new development work.
 
@@ -967,13 +967,14 @@ public:
 - `SeparatorCtrl& SetSize(int w)`
 
 # DnD acceptance flow:
+
 In DragAndDrop(Point, PasteClip&), call AcceptImage(d)/AcceptFiles(d) and set a visual state (d.IsAccepted()) to cue users. Reset state in DragLeave()/CancelMode(). For file→image drops, add plugin/png/jpg/bmp to the EXE’s uses.
 
-Custom Display for DropList: Subclass Display, override Paint, and attach with SetDisplay(Single<YourDisplay>()). Align text vertically using GetTextSize and add a faint baseline for clarity.
+Custom Display for DropList: Subclass Display, override Paint, and attach with SetDisplay(Single<yourdisplay>()). Align text vertically using GetTextSize and add a faint baseline for clarity.</yourdisplay>
 
 JSON best practice: Prefer Value/ValueMap/ValueArray with type checks; wrap access in small typed helpers. For large inputs, use CParser to stream segments.
 
-ImageDraw basics:
+ImageDraw basics:  
 Create an offscreen raster with ImageDraw w(cx, cy); using Draw ops. Convert to Image by assignment (Image img = w;). Use theme-aware colors (SColor...) when appropriate.
 
 Choosing a renderer:
@@ -984,15 +985,16 @@ BufferPainter(ImageBuffer, MODE_ANTIALIASED) → antialiased vectors/gradients t
 
 PaintingPainter + DrawPainting → resolution-independent recorded vector scenes (printing/export).
 
-Pixel alignment:
+Pixel alignment:  
 When drawing text onto small images, compute GetTextSize() and position with integer coordinates to avoid blur.
 
-Performance tip:
+Performance tip:  
 Cache Image results and blit in TopWindow::Paint; avoid regenerating raster content every frame unless inputs change.
 
 If you’ve got more snippets like this (especially around ImageBuffer, Painter filters, or printing/Report), drop them in and I’ll fold them into the assistant and propose concise guide entries.
 
 # Http server scaffolding:
+
 server.Listen(), per-connection socket.Accept(server), HttpHeader http; http.Read(socket);, optional body via socket.GetAll(len), reply with HttpResponse(socket, http.scgi, ...). If using multiple worker threads around a single listening socket, serialize Accept (like your StaticMutex) or split per-thread TcpSocket with Listen() on one and Accept() from that one under a lock.
 
 DnD image pattern: override DragAndDrop, call AcceptImage/GetImage, track d.IsAccepted() for hover feedback; reset state in DragLeave/CancelMode.
@@ -1005,28 +1007,28 @@ ArrayCtrl per-column embedded controls using ColumnAt(i).Ctrls(factory) + .Edit(
 
 Use Assemblies to include your repo root + uppsrc. .upp lives at package root.
 
-LAYOUTFILE <.../foo.lay> + #include <CtrlCore/lay.h> to bind layouts.
+LAYOUTFILE &lt;.../foo.lay&gt; + #include &lt;CtrlCore/lay.h&gt; to bind layouts.
 
-EXE: mainconfig "" = "GUI" or "CONSOLE".
+EXE: mainconfig "" = "GUI" or "CONSOLE".  
 Library: empty mainconfig. Build EXE separately that depends on it.
 
 Image IO: add plugin/png, plugin/jpg, plugin/bmp in EXE uses if loading common formats.
 
 # Painter & Draw
 
-Prefer BufferPainter over an ImageBuffer inside TopWindow::Paint.
+Prefer BufferPainter over an ImageBuffer inside TopWindow::Paint.  
 For vector caching/printing: PaintingPainter + DrawPainting/PrinterJob.
 
 Path ops: Move/Line/Close, Quadratic/Cubic/Arc, or SVG Path("M...").
 
-Fills: solid + linear/radial gradients (ColorStop for multi-stop).
+Fills: solid + linear/radial gradients (ColorStop for multi-stop).  
 Gradient stroke: Stroke(width, x1,y1,c1, x2,y2,c2).
 
 Image-as-brush: Fill(img, x1,y1, x2,y2, flags) with FILL_PAD/REPEAT/REFLECT/HREFLECT/VPAD/FAST.
 
 Filters: FILTER_NEAREST/BILINEAR/BSPLINE/COSTELLA/BICUBIC_MITCHELL/CATMULLROM/LANCZOS3.
 
-Text on path: BeginOnPath(t[,abs]) ... End(), align using FontInfo ascent/descent.
+Text on path: BeginOnPath(t\[,abs\]) ... End(), align using FontInfo ascent/descent.
 
 Scoping: Always balance Begin/End, BeginMask/End, Clip scopes. Use EvenOdd/Div for overlaps.
 
@@ -1040,13 +1042,13 @@ Push controls: Pusher, Button(Style), DataPusher, SpinButtons frame.
 
 DropChoice: PopUpList, custom Display & Convert, DropLines, DropWidth, AlwaysDrop, RdOnlyDrop, HideDrop, UpDownKeys.
 
-HeaderCtrl: Split/drag, modes Proportional/Reduce*/Absolute/Fixed. Works as CtrlFrame.
+HeaderCtrl: Split/drag, modes Proportional/Reduce\*/Absolute/Fixed. Works as CtrlFrame.
 
 Text: TextCtrl/DocEdit with undo/redo, selection, printing.
 
 DnD: override TopWindow::DragAndDrop/DragLeave/CancelMode. Use AcceptImage(d)/GetImage(d); hover feedback via d.IsAccepted().
 
-XML browser: FileList + TreeCtrl + XmlParser, banner via FrameTop<StaticRect>; show source in LineEdit at error with SetCursor(GetPos(line,col)).
+XML browser: FileList + TreeCtrl + XmlParser, banner via FrameTop<staticrect>; show source in LineEdit at error with SetCursor(GetPos(line,col)).</staticrect>
 
 # GridCtrl & ArrayCtrl
 
@@ -1054,10 +1056,10 @@ Columns: AddColumn(...).Width(...), Fixed/Min/Max, WrapText.
 
 Options: Indicator, HorzGrid/VertGrid, ResizingCols/Rows, MovingCols/Rows, LiveCursor, DrawFocus, Chameleon, EditMode(Edit row/cell).
 
-Data/editors: per-column EditInt/ EditString/ DropTime/ DropList(SetConvert).
+Data/editors: per-column EditInt/ EditString/ DropTime/ DropList(SetConvert).  
 Summary: DoSum/DoCount/DoMin.
 
-Selection/sort: MultiSelect, SelectRow, Sorting, MultiSorting.
+Selection/sort: MultiSelect, SelectRow, Sorting, MultiSorting.  
 Count: SetRowCount/AddRow/Append/RemoveLast.
 
 Persist: StoreAsXML/LoadFromXML.
@@ -1068,7 +1070,7 @@ Tooling panel pattern: mirror grid options (indicator, grids, resizing, coloring
 
 # Image & GL
 
-ImageDraw: Offscreen raster composition → assign to Image → DrawImage in Paint. Use SColor* theme colors.
+ImageDraw: Offscreen raster composition → assign to Image → DrawImage in Paint. Use SColor\* theme colors.
 
 GLDraw: CreateGLTexture, GetTextureForImage; GLProgram(Compile/Link/Use). GLDraw implements SDraw using shaders (gl_image, etc.). GLOrtho for projection.
 
@@ -1084,12 +1086,12 @@ Minimal HTTP/SCGI server:
 
 server.Listen(port, backlog).
 
-Worker: TcpSocket s; s.Accept(server).
-HttpHeader http; http.Read(s);
-Read body via http.GetContentLength() then socket.GetAll(len).
+Worker: TcpSocket s; s.Accept(server).  
+HttpHeader http; http.Read(s);  
+Read body via http.GetContentLength() then socket.GetAll(len).  
 Respond: HttpResponse(s, http.scgi, 200, "OK", "text/html", body).
 
-MT: _MULTITHREADED + Thread::Start(callback(Server));
+MT: \_MULTITHREADED + Thread::Start(callback(Server));
 
 Serialize Accept with a StaticMutex if needed.
 
@@ -1121,11 +1123,11 @@ Add summary rows (sum/min/max) to GridCtrl.
 
 Make a DropList column with a custom Display.
 
-control ownership/lifetime (Parent owns children, safe unique/shared patterns with One<>, Ptr<>, Pte<>)
+control ownership/lifetime (Parent owns children, safe unique/shared patterns with One&lt;>, Ptr<&gt;, Pte<>)
 
 callbacks & capture safety (THISBACK, clearing callbacks before teardown)
 
-frames/layout (FrameTop<StaticRect>, ParentCtrl, Splitter)
+frames/layout (FrameTop<staticrect>, ParentCtrl, Splitter)</staticrect>
 
 Display/Convert/DisplayPopup/PopUpList/DropChoice wiring
 
@@ -1143,3 +1145,149 @@ HTTP/SCGI server pattern with TcpSocket, HttpHeader, MT & StaticMutex
 
 GUI safety, timers, and memory discipline (value semantics, One<>, GuiLock)
 
+Got it—here’s a clean drop-in section you can paste under “Additional Guidance & Code-Gen Gotchas.” I kept your bullets intact, tightened a few wordings, and grouped them so they’re easy to scan later.
+***
+### Additional guidance & code-gen gotchas
+
+**Type safety & conversions**
+
+* Avoid arithmetic expressions with mixed types in constructors, casts, or generic functions like `max/min`.
+* Ensure all operands in such expressions share the same explicit type.
+* Don’t mix floating-point literals (like `3.0`) with integers in `max/min`—use `3` (or cast explicitly) to keep types consistent.
+* Avoid unnecessary casts; prefer `static_cast<T>(x)` over function-style casts (`T(x)`) when you must convert.
+* Don’t rely on implicit conversions in API calls; be explicit about types.
+* Don’t use identifiers like `near`, `far`, `min`, or `max` as variable names—they may be macros or keywords.
+
+**U++ drawing API specifics**
+
+* Don’t use raw integers where a `Color` is expected—U++ `Color` has no implicit `int` conversion.
+* Always pass proper `Color` values (e.g., `Black()`, `Red()`, `Null`) to drawing functions.
+* Ensure drawing function arguments match the expected signature—especially color and width parameters.
+* U++ drawing functions use stateful `Pen()` and `Brush()`; verify the API you’re calling rather than assuming “width is the last argument.”
+* Always clear painter-backed images before emitting any paths: `p.Clear(RGBAZero());` to avoid stale memory artifacts in UI paints.
+
+**Geometry & interaction**
+
+* Normalize geometry before hit-testing (`Rect::Normalize()`), so negative-extent drags don’t break selection.
+* Normalize/guard “tiny” primitives (e.g., skip emit when radius/extent < 1 px) to avoid unstable paths.
+
+**Namespaces & callbacks**
+
+* If you need the global `clamp` (to avoid ADL/overload surprises), qualify it as `::clamp(...)`.
+* Remember to `typedef [MyClass] CLASSNAME;` to enable `THISBACK` to bind handlers to `MainWin` methods.
+
+**Compositing & overlays**
+
+* Keep overlay drawing (selection, handles) separate from the painter pass; overlays should render directly on the window `Draw`, not into the painter buffer.
+* Prefer alpha buffers (`IMAGE_ALPHA`) for composition; if diagnosing artifacts, temporarily flip to opaque (`IMAGE_OPAQUE`) to isolate blending issues.
+
+     
+1) Rendering pipeline (final)
+
+Paint background + grid on Draw.
+
+Render all shapes into a single offscreen ImageBuffer (we use opaque kind to avoid transient black frames) and then DrawImage once.
+
+Draw selection overlays last, directly on Draw.
+
+2) Circle drag black‑frame root cause & fix
+
+Symptom: black frames during circle drag/move; cleared when another primitive is added.
+
+Cause: overlay drawing coupled with alpha composition under frequent redraws led to undefined pixels being shown.
+
+Fixes adopted:
+
+Keep overlays out of painter pass; draw them directly on Draw.
+
+Use opaque painter buffer (IMAGE_OPAQUE + Clear(White)), ensuring every pixel is defined each frame.
+
+Circle path emission uses two semicircular SvgArc segments (start at +X/east), which avoids tiny‑radius edge cases.
+
+3) Overlays made lightweight
+
+For circles, selection overlay draws a box outline + two handles (center/east) using DrawRect lines, not stroked ellipses. This keeps overlay paint cheap and predictable.
+
+All overlays are kept outside the BufferPainter layer.
+
+4) Hit‑testing & editing
+
+Bodies:
+
+Rect: normalized rect → Inflated(4) contains.
+
+Line: point‑to‑segment distance with tolerance.
+
+Circle: inside disc or near the ring; tolerance = max(6, stroke/2 + 4).
+
+Triangle: IsPointInTriangle for filled; segment proximity otherwise.
+
+Vertices:
+
+Rect: corners 0..3.
+
+Line: endpoints (0,1).
+
+Circle: center (0) and east radius handle (1).
+
+Curve: a0,c0[,c1],a1 indexes.
+
+Edit logic distinguishes moving vs resizing via drag_vertex < 0.
+
+5) Normalized model & snapping
+
+All geometry lives in normalized space (0..1 within the inset). Snapping applies on pixel input and is then converted to normalized.
+
+Helper Snap1D keeps grid alignment stable:
+
+origin + ((v - origin + step/2) / step) * step.
+
+6) Style panel → model sync
+
+UI edits push to the selected shape only; changes call Refresh() and regenerate code on WhenShapesChanged.
+
+Outline color/width kept, but overlays do not rely on outline state.
+
+7) Code‑gen shape by shape
+
+Rect/Line/Triangle/Curve/Text mirror runtime paths.
+
+Circle code‑gen matches the runtime fix:
+
+Move(X+R, Y) then two SvgArc(R,R,0,false,true, ...) calls to X‑R and back to X+R.
+
+Styles are emitted conditionally (opacity, dash, fill, stroke) and End() closes each snippet.
+
+8) Safety rails that stay
+
+Tiny‑geometry guards are permanent.
+
+Style application is defensive (opacity clamp, dashed pattern validation).
+
+Begin/End and Clip/End balancing verified.
+
+9) Developer toggles to keep (for future triage)
+
+BYPASS_PAINTER_WHEN_ANY_CIRCLE
+
+OPAQUE_PAINTER_TEST
+
+SKIP_OVERLAY_TEST
+
+10) Regression checklist (per change)
+
+Drag each primitive with Snap on/off; resize; move via cursor.
+
+Toggle opacity/dash; verify no artifacts.
+
+Export code; compile minimal snippet; ensure visual parity.
+
+Stress test circle at sub‑pixel radii and large sizes; verify no flicker and correct code‑gen.
+
+Appendix — Terminology
+
+Painter layer: offscreen raster (ImageBuffer) rendered via BufferPainter.
+
+Overlay: selection UI drawn on top of content directly with Draw.
+
+Inset: the working rect; model coordinates are normalized to this area.
